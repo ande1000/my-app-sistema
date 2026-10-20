@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My App Sist - Painel de Controle</title>
+    <!-- FAVICON DA LOJINHA -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff0000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3Cpolyline points='9 22 9 12 15 12 15 22'/%3E%3C/svg%3E">
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
         :root { --header-purple: #d15cbe; --sidebar-black: #000; --icon-yellow: #ffff00; --bg-gray: #c0c0c0; --text-white: #fff; }
@@ -183,7 +186,6 @@
                 <div class="grid-container" id="painel-acabou"></div>
             </div>
 
-            <!-- AQUI ELE MOSTRA OS USUÁRIOS REAIS -->
             <div id="aba-usuarios" class="content-screen">
                 <div class="content-title">Usuários Conectados</div>
                 <div class="grid-container" id="painel-usuarios"></div>
@@ -234,13 +236,10 @@
     let dadosEstoque = [];
     let dadosSairam = [];
     let dadosListaCompras = [];
-    let dadosUsuarios = []; // NOVO ARRAY DE USUÁRIOS
+    let dadosUsuarios = [];
     let idParaApagar = null;
     let abaAtual = 'estoque';
 
-    // ==========================================
-    // CONEXÃO COM O CHAT
-    // ==========================================
     const socket = io(URL_SERVIDOR);
 
     socket.on('connect', () => {
@@ -292,9 +291,6 @@
         }
     }
 
-    // ==========================================
-    // RELÓGIO AUTOMÁTICO (ATUALIZA A CADA 3 SEG)
-    // ==========================================
     setInterval(async () => {
         await carregarDadosPainel();
         if (abaAtual === 'estoque') renderEstoquePainel();
@@ -302,7 +298,7 @@
         if (abaAtual === 'saiu') renderSaiuPainel();
         if (abaAtual === 'acabou') renderAcabouPainel();
         if (abaAtual === 'lista_compras') renderListaPainel();
-        if (abaAtual === 'usuarios') renderUsuariosPainel(); // Atualiza usuários sozinho
+        if (abaAtual === 'usuarios') renderUsuariosPainel();
     }, 3000);
 
     async function carregarDadosPainel() {
@@ -317,9 +313,8 @@
             dadosListaCompras = await resLista.json();
 
             const resUsuarios = await fetch(`${URL_SERVIDOR}/usuarios`);
-            dadosUsuarios = await resUsuarios.json(); // Puxa a lista real de quem tá online
+            dadosUsuarios = await resUsuarios.json();
 
-            // Atualiza o nome do topo com o primeiro usuário conectado
             if (dadosUsuarios.length > 0) {
                 document.getElementById('nome-admin').innerText = dadosUsuarios[0].nome;
             } else {
@@ -355,9 +350,6 @@
         });
     }
 
-    // ==========================================
-    // RENDERIZAÇÃO DOS USUÁRIOS REAIS
-    // ==========================================
     function renderUsuariosPainel() {
         const container = document.getElementById('painel-usuarios');
         if(!container) return;

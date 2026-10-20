@@ -183,17 +183,10 @@
                 <div class="grid-container" id="painel-acabou"></div>
             </div>
 
+            <!-- AQUI ELE MOSTRA OS USUÁRIOS REAIS -->
             <div id="aba-usuarios" class="content-screen">
                 <div class="content-title">Usuários Conectados</div>
-                <div class="grid-container" id="painel-usuarios">
-                    <div class="card-item">
-                        <div class="card-img">FOTO</div>
-                        <div class="card-info">
-                            <h4>Anderson (App)</h4>
-                            <p>Status: <span style="color: green; font-weight: bold;">Online</span></p>
-                        </div>
-                    </div>
-                </div>
+                <div class="grid-container" id="painel-usuarios"></div>
             </div>
 
             <div id="aba-lista_compras" class="content-screen">
@@ -240,7 +233,8 @@
     
     let dadosEstoque = [];
     let dadosSairam = [];
-    let dadosListaCompras = []; // Agora vai puxar do banco
+    let dadosListaCompras = [];
+    let dadosUsuarios = []; // NOVO ARRAY DE USUÁRIOS
     let idParaApagar = null;
     let abaAtual = 'estoque';
 
@@ -307,7 +301,8 @@
         if (abaAtual === 'obs') renderObsPainel();
         if (abaAtual === 'saiu') renderSaiuPainel();
         if (abaAtual === 'acabou') renderAcabouPainel();
-        if (abaAtual === 'lista_compras') renderListaPainel(); // Atualiza a lista em tempo real
+        if (abaAtual === 'lista_compras') renderListaPainel();
+        if (abaAtual === 'usuarios') renderUsuariosPainel(); // Atualiza usuários sozinho
     }, 3000);
 
     async function carregarDadosPainel() {
@@ -320,6 +315,17 @@
 
             const resLista = await fetch(`${URL_SERVIDOR}/lista`);
             dadosListaCompras = await resLista.json();
+
+            const resUsuarios = await fetch(`${URL_SERVIDOR}/usuarios`);
+            dadosUsuarios = await resUsuarios.json(); // Puxa a lista real de quem tá online
+
+            // Atualiza o nome do topo com o primeiro usuário conectado
+            if (dadosUsuarios.length > 0) {
+                document.getElementById('nome-admin').innerText = dadosUsuarios[0].nome;
+            } else {
+                document.getElementById('nome-admin').innerText = "Aguardando App...";
+            }
+
         } catch (erro) {
             console.error("Erro ao buscar dados:", erro);
         }
@@ -345,6 +351,33 @@
             if (aba === 'saiu') renderSaiuPainel();
             if (aba === 'acabou') renderAcabouPainel();
             if (aba === 'lista_compras') renderListaPainel();
+            if (aba === 'usuarios') renderUsuariosPainel();
+        });
+    }
+
+    // ==========================================
+    // RENDERIZAÇÃO DOS USUÁRIOS REAIS
+    // ==========================================
+    function renderUsuariosPainel() {
+        const container = document.getElementById('painel-usuarios');
+        if(!container) return;
+        container.innerHTML = '';
+        
+        if (dadosUsuarios.length === 0) {
+            container.innerHTML = '<p>Nenhum usuário conectado no momento.</p>';
+            return;
+        }
+
+        dadosUsuarios.forEach(user => {
+            container.innerHTML += `
+                <div class="card-item">
+                    <div class="card-img">${user.foto ? `<img src="${user.foto}">` : 'FOTO'}</div>
+                    <div class="card-info">
+                        <h4>${user.nome}</h4>
+                        <p>Status: <span style="color: green; font-weight: bold;">Online</span></p>
+                    </div>
+                </div>
+            `;
         });
     }
 
@@ -430,7 +463,6 @@
         });
     }
 
-    // AQUI ELE MOSTRA OS DADOS REAIS DA LISTA
     function renderListaPainel() {
         const container = document.getElementById('painel-lista');
         if(!container) return;

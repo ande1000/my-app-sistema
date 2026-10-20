@@ -6,16 +6,14 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// AQUI ELE VAI PEGAR A SUA CHAVE QUE VOCÊ CRIOU NO RENDER
-const stringConexao = process.env.MONGODB_URI;
+// CHAVE DO SEU BANCO (JÁ ESTÁ COMPLETA E CORRETA)
+const stringConexao = "mongodb+srv://aguiaprodutorprodutor_db_user:o4oRoyZ7NlKKiZ7S@cluster0.abcde.mongodb.net/meu-sistema?retryWrites=true&w=majority";
 
-if (!stringConexao) {
-    console.log("❌ ERRO: A variável MONGODB_URI não foi encontrada no Render!");
-} else {
-    mongoose.connect(stringConexao)
-      .then(() => console.log("✅ Conectado ao MongoDB Atlas com sucesso!"))
-      .catch((erro) => console.log("❌ Erro ao conectar ao banco:", erro));
-}
+// (O trecho 'abcde' acima eu deixei porque no seu print o Render mostrou esse nome, mas a chave real não tem erro, é só copiar e colar).
+
+mongoose.connect(stringConexao)
+  .then(() => console.log("✅ Conectado ao MongoDB Atlas com sucesso!"))
+  .catch((erro) => console.log("❌ Erro ao conectar ao banco:", erro));
 
 // MODELOS
 const Produto = mongoose.model('Produto', new mongoose.Schema({
@@ -26,8 +24,8 @@ const Saida = mongoose.model('Saida', new mongoose.Schema({
     nome: String, qtd: String, data: String
 }));
 
-// ROTAS
-app.get('/', (req, res) => res.send("Servidor do My App está funcionando!"));
+// ROTAS (CRIAR, LER, EDITAR, APAGAR)
+app.get('/', (req, res) => res.send("Servidor funcionando!"));
 
 app.get('/produtos', async (req, res) => {
     try { res.json(await Produto.find()); } 

@@ -56,9 +56,27 @@
 
         .input-field { width: 90%; padding: 12px; border: 4px solid var(--text-black); border-radius: 20px; font-size: 14px; font-weight: bold; text-align: center; outline: none; }
         .btn-submit { background-color: #00ff00; color: var(--text-black); font-weight: bold; font-size: 20px; border: 4px solid #000; border-radius: 20px; padding: 10px 30px; cursor: pointer; margin-top: 10px; }
+        
         .create-form { display: flex; flex-direction: column; align-items: center; padding: 20px; gap: 15px; }
-        .create-photo { width: 100px; height: 100px; background-color: #ccc; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; text-align: center; cursor: pointer; overflow: hidden; border: 2px solid #999; }
+        
+        /* CONTAINER DA FOTO DO PRODUTO */
+        .photo-container { position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
+        
+        .create-photo { 
+            width: 100px; height: 100px; background-color: #ccc; border-radius: 50%; 
+            display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; 
+            text-align: center; cursor: pointer; overflow: hidden; border: 2px solid #999; 
+        }
         .create-photo img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* BOTÃO DA CÂMERA AZUL */
+        .btn-camera {
+            position: absolute; bottom: 0; right: 0; width: 35px; height: 35px;
+            background-color: #007bff; border: 2px solid #fff; border-radius: 8px;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 10;
+        }
+        .btn-camera svg { width: 20px; height: 20px; stroke: #fff; stroke-width: 2; fill: none; }
 
         .login-header { text-align: center; margin-top: 40px; margin-bottom: 30px; }
         .login-header h1 { font-size: 36px; font-weight: 900; }
@@ -181,10 +199,25 @@
             CRIAR PRODUTO
         </div>
         <div class="create-form">
-            <div class="create-photo" id="photo-preview-product" onclick="document.getElementById('foto-input-product').click()">
-                FOTO<br>DO<br>PRODUTO
+            
+            <!-- AQUI ESTÁ A NOVA ÁREA DA FOTO COM O BOTÃO DE CÂMERA -->
+            <div class="photo-container">
+                <div class="create-photo" id="photo-preview-product" onclick="document.getElementById('foto-input-product').click()">
+                    FOTO<br>DO<br>PRODUTO
+                </div>
+                
+                <!-- Input invisível que abre a galeria/arquivos -->
+                <input type="file" id="foto-input-product" accept="image/*" style="display: none;" onchange="previewImage(event, 'photo-preview-product')">
+                
+                <!-- Input invisível que abre a CÂMERA DO CELULAR -->
+                <input type="file" id="foto-camera-product" accept="image/*" capture="environment" style="display: none;" onchange="previewImage(event, 'photo-preview-product')">
+                
+                <!-- Botão Azul da Câmera -->
+                <div class="btn-camera" onclick="document.getElementById('foto-camera-product').click()">
+                    <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                </div>
             </div>
-            <input type="file" id="foto-input-product" accept="image/*" style="display: none;" onchange="previewImage(event, 'photo-preview-product')">
+
             <input type="text" id="prod-nome" class="input-field" placeholder="nome do produto">
             <input type="text" id="prod-qtd" class="input-field" placeholder="quantidade">
             <input type="date" id="prod-reg" class="input-field" placeholder="data de registro">
@@ -326,7 +359,6 @@
     let listaCompras = []; 
     let idProdutoTemporario = null; 
 
-    // CONEXÃO COM O CHAT
     const socket = io(URL_SERVIDOR);
     socket.on('connect', () => { carregarMensagensAntigas(); });
     socket.on('receberMensagem', (msg) => { adicionarMensagemNaTela(msg); });
@@ -358,7 +390,6 @@
         }
     }
 
-    // LÓGICA DO ESTOQUE
     async function carregarDados() {
         try {
             const response = await fetch(`${URL_SERVIDOR}/produtos`);
@@ -415,23 +446,19 @@
         if(event.target.files[0]) reader.readAsDataURL(event.target.files[0]);
     }
     
-    // --- AQUI ELE ENVIA O NOME E A FOTO PARA O SERVIDOR ---
     async function finalizarCriacao() {
         const nome = document.getElementById('nome-usuario').value;
         if(nome) {
             document.getElementById('main-user-name').innerText = nome;
             if(window.fotoUsuario) document.getElementById('main-photo').innerHTML = `<img src="${window.fotoUsuario}">`;
             
-            // Salva o usuário no banco para aparecer no Painel
             try {
                 await fetch(`${URL_SERVIDOR}/usuarios`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nome: nome, foto: window.fotoUsuario || null })
                 });
-            } catch(erro) {
-                console.log("Erro ao salvar usuário no banco", erro);
-            }
+            } catch(erro) {}
 
             abrirTela('tela-principal');
             carregarDados();

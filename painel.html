@@ -5,431 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My App Sist - Painel de Controle</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
-        }
-
-        :root {
-            --header-purple: #d15cbe;
-            --sidebar-black: #000;
-            --icon-yellow: #ffff00;
-            --bg-gray: #c0c0c0;
-            --text-white: #fff;
-        }
-
-        body {
-            background-color: var(--bg-gray);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* Container OCUPANDO TELA CHEIA */
-        .desktop-container {
-            width: 100%;
-            height: 100vh;
-            background-color: #fff;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
+        :root { --header-purple: #d15cbe; --sidebar-black: #000; --icon-yellow: #ffff00; --bg-gray: #c0c0c0; --text-white: #fff; }
+        body { background-color: var(--bg-gray); display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        .desktop-container { width: 100%; height: 100vh; background-color: #fff; display: flex; flex-direction: column; position: relative; }
+        
         /* TOPO (HEADER) */
-        .top-header {
-            background-color: var(--header-purple);
-            height: 70px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            position: relative;
-            z-index: 10;
-        }
+        .top-header { background-color: var(--header-purple); height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: relative; z-index: 10; }
+        .user-profile-header { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 14px; color: #000; }
+        .app-logo { position: absolute; left: 50%; transform: translateX(-50%); font-size: 36px; font-weight: 900; color: #000; letter-spacing: 2px; }
+        .header-actions { display: flex; align-items: center; gap: 20px; }
+        .btn-notificacao { background-color: var(--icon-yellow); border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        .btn-notificacao:active { transform: scale(0.95); }
+        .chat-badge-container { position: relative; cursor: pointer; }
+        .chat-badge { position: absolute; top: -5px; right: -5px; background-color: #00ff00; color: #000; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+        .btn-sair-conta { background: none; border: none; cursor: pointer; }
 
-        .user-profile-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: bold;
-            font-size: 14px;
-            color: #000;
-        }
+        /* CORPO */
+        .main-body { display: flex; flex: 1; overflow: hidden; }
 
-        .app-logo {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 36px;
-            font-weight: 900;
-            color: #000;
-            letter-spacing: 2px;
-        }
+        /* BARRA LATERAL */
+        .sidebar { width: 110px; background-color: var(--sidebar-black); display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 10px; overflow-y: auto; }
+        .sidebar-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; cursor: pointer; color: var(--text-white); font-size: 10px; font-weight: bold; text-transform: uppercase; width: 100%; gap: 5px; padding: 10px 0; transition: background 0.2s; }
+        .sidebar-btn:hover { background-color: #222; }
+        .sidebar-btn svg { width: 30px; height: 30px; fill: none; stroke: var(--icon-yellow); stroke-width: 2; }
+        .sidebar-btn.active { background-color: #333; border-left: 4px solid var(--icon-yellow); }
 
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
+        /* ÁREA CENTRAL */
+        .content-area { flex: 1; background-color: var(--bg-gray); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
+        .content-screen { display: none; width: 100%; height: 100%; flex-direction: column; }
+        .content-screen.active { display: flex; }
+        .content-title { font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #000; text-transform: uppercase; }
 
-        .btn-notificacao {
-            background-color: var(--icon-yellow);
-            border: none;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        
-        .btn-notificacao:active {
-            transform: scale(0.95);
-        }
+        /* LISTAS E CARDS */
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .card-item { background-color: #fff; border: 2px solid #000; border-radius: 8px; padding: 15px; display: flex; gap: 15px; align-items: center; }
+        .card-img { width: 60px; height: 60px; background-color: #ddd; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 8px; font-weight: bold; overflow: hidden; flex-shrink: 0; }
+        .card-img img { width: 100%; height: 100%; object-fit: cover; }
+        .card-info h4 { font-size: 18px; margin-bottom: 5px; }
+        .card-info p { font-size: 13px; color: #555; }
 
-        .chat-badge-container {
-            position: relative;
-            cursor: pointer;
-        }
+        /* TABELAS */
+        .data-table { width: 100%; border-collapse: collapse; background-color: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+        .data-table th { background-color: #333; color: #fff; font-weight: bold; }
+        .action-icon-btn { background: none; border: none; cursor: pointer; padding: 5px; }
+        .action-icon-btn svg { width: 18px; height: 18px; }
 
-        .chat-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background-color: #00ff00;
-            color: #000;
-            font-size: 10px;
-            font-weight: bold;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+        /* CÁLCULO */
+        .calc-btn { background-color: #00ff00; border: 2px solid #000; padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-bottom: 20px; align-self: flex-start; transition: 0.2s; }
+        .calc-btn:active { transform: scale(0.95); }
 
-        .btn-sair-conta {
-            background: none;
-            border: none;
-            cursor: pointer;
-        }
+        /* CHAT */
+        .chat-area { display: flex; flex-direction: column; height: 100%; }
+        .chat-messages { flex: 1; background: #fff; border: 2px solid #000; border-radius: 8px; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+        .msg-bubble { padding: 10px 15px; border-radius: 15px; font-size: 14px; max-width: 70%; }
+        .msg-bubble.sent { background-color: #ff0000; color: #fff; align-self: flex-end; border-bottom-right-radius: 0; }
+        .msg-bubble.received { background-color: #00ff00; color: #000; align-self: flex-start; border-bottom-left-radius: 0; }
+        .chat-input-panel { display: flex; gap: 10px; }
+        .chat-input-panel input { flex: 1; padding: 12px; border: 2px solid #000; border-radius: 8px; outline: none; font-size: 14px; }
+        .chat-input-panel button { padding: 0 25px; background: #000; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
 
-        /* CORPO (SIDEBAR E ÁREA CENTRAL) */
-        .main-body {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
+        /* NOTIFICAÇÃO */
+        .notification-toast { position: absolute; top: 80px; right: 20px; background-color: #fff; border-left: 6px solid #ff0000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); padding: 15px 20px; border-radius: 8px; display: flex; align-items: center; gap: 15px; transform: translateX(120%); transition: transform 0.4s ease-in-out; z-index: 1000; max-width: 350px; }
+        .notification-toast.show { transform: translateX(0); }
+        .notification-icon { font-size: 24px; }
+        .notification-text h4 { font-size: 14px; margin-bottom: 2px; }
+        .notification-text p { font-size: 12px; color: #555; }
 
-        /* BARRA LATERAL (MENU) */
-        .sidebar {
-            width: 110px;
-            background-color: var(--sidebar-black);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 10px 0;
-            gap: 10px;
-            overflow-y: auto;
-        }
-
-        .sidebar-btn {
-            background: none;
-            border: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            color: var(--text-white);
-            font-size: 10px;
-            font-weight: bold;
-            text-transform: uppercase;
-            width: 100%;
-            gap: 5px;
-            padding: 10px 0;
-            transition: background 0.2s;
-        }
-
-        .sidebar-btn:hover {
-            background-color: #222;
-        }
-
-        .sidebar-btn svg {
-            width: 30px;
-            height: 30px;
-            fill: none;
-            stroke: var(--icon-yellow);
-            stroke-width: 2;
-        }
-
-        .sidebar-btn.active {
-            background-color: #333;
-            border-left: 4px solid var(--icon-yellow);
-        }
-
-        /* ÁREA CENTRAL (QUADRADO CINZA) */
-        .content-area {
-            flex: 1;
-            background-color: var(--bg-gray);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            position: relative;
-        }
-
-        /* TELAS INTERNAS DO CONTEÚDO */
-        .content-screen {
-            display: none;
-            width: 100%;
-            height: 100%;
-            flex-direction: column;
-        }
-
-        .content-screen.active {
-            display: flex;
-        }
-
-        .content-title {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: #000;
-            text-transform: uppercase;
-        }
-
-        /* ESTILOS DE LISTAS E CARDS */
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
-        }
-
-        .card-item {
-            background-color: #fff;
-            border: 2px solid #000;
-            border-radius: 8px;
-            padding: 15px;
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .card-img {
-            width: 60px;
-            height: 60px;
-            background-color: #ddd;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 8px;
-            font-weight: bold;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-        
-        .card-img img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .card-info h4 {
-            font-size: 18px;
-            margin-bottom: 5px;
-        }
-
-        .card-info p {
-            font-size: 13px;
-            color: #555;
-        }
-
-        /* TABELA DE LISTAS */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: #fff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .data-table th, .data-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-            font-size: 14px;
-        }
-
-        .data-table th {
-            background-color: #333;
-            color: #fff;
-            font-weight: bold;
-        }
-
-        /* BOTÕES DE AÇÃO (EDITAR/APAGAR) */
-        .action-icon-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 5px;
-        }
-        .action-icon-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        /* CÁLCULO SEMANAL */
-        .calc-btn {
-            background-color: #00ff00;
-            border: 2px solid #000;
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-bottom: 20px;
-            align-self: flex-start;
-            transition: 0.2s;
-        }
-        .calc-btn:active {
-            transform: scale(0.95);
-        }
-
-        /* CHAT DO PAINEL */
-        .chat-area {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-        .chat-messages {
-            flex: 1;
-            background: #fff;
-            border: 2px solid #000;
-            border-radius: 8px;
-            padding: 15px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .msg-bubble {
-            padding: 10px 15px;
-            border-radius: 15px;
-            font-size: 14px;
-            max-width: 70%;
-        }
-        .msg-bubble.sent {
-            background-color: #ff0000;
-            color: #fff;
-            align-self: flex-end;
-            border-bottom-right-radius: 0;
-        }
-        .msg-bubble.received {
-            background-color: #00ff00;
-            color: #000;
-            align-self: flex-start;
-            border-bottom-left-radius: 0;
-        }
-        .chat-input-panel {
-            display: flex;
-            gap: 10px;
-        }
-        .chat-input-panel input {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #000;
-            border-radius: 8px;
-            outline: none;
-            font-size: 14px;
-        }
-        .chat-input-panel button {
-            padding: 0 25px;
-            background: #000;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        /* BALÃO DE NOTIFICAÇÃO CUSTOMIZADO */
-        .notification-toast {
-            position: absolute;
-            top: 80px;
-            right: 20px;
-            background-color: #fff;
-            border-left: 6px solid #ff0000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            padding: 15px 20px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transform: translateX(120%);
-            transition: transform 0.4s ease-in-out;
-            z-index: 1000;
-            max-width: 350px;
-        }
-        .notification-toast.show {
-            transform: translateX(0);
-        }
-        .notification-icon {
-            font-size: 24px;
-        }
-        .notification-text h4 {
-            font-size: 14px;
-            margin-bottom: 2px;
-        }
-        .notification-text p {
-            font-size: 12px;
-            color: #555;
-        }
-
-        /* MODAL DE CONFIRMAÇÃO CUSTOMIZADO */
-        .modal-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-        .modal-overlay.active {
-            display: flex;
-        }
-        .modal-confirm {
-            background: #fff;
-            padding: 30px;
-            border-radius: 12px;
-            text-align: center;
-            max-width: 400px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        .modal-confirm h3 {
-            margin-bottom: 20px;
-            font-size: 20px;
-        }
-        .modal-confirm .btns {
-            display: flex;
-            justify-content: space-around;
-        }
-        .modal-confirm button {
-            padding: 10px 25px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 16px;
-        }
+        /* MODAL */
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal-overlay.active { display: flex; }
+        .modal-confirm { background: #fff; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-confirm h3 { margin-bottom: 20px; font-size: 20px; }
+        .modal-confirm .btns { display: flex; justify-content: space-around; }
+        .modal-confirm button { padding: 10px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
         .btn-cancel { background: #ccc; color: #000; }
         .btn-danger { background: #ff0000; color: #fff; }
 
@@ -439,7 +89,6 @@
 
 <div class="desktop-container">
 
-    <!-- TOPO -->
     <div class="top-header">
         <div class="user-profile-header">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -450,22 +99,17 @@
 
         <div class="header-actions">
             <button class="btn-notificacao" onclick="mostrarNotificacao()">notificações</button>
-            
             <div class="chat-badge-container" onclick="abrirAba('chat')">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                 <div class="chat-badge" id="chat-badge">1</div>
             </div>
-
             <button class="btn-sair-conta" title="Sair da Conta" onclick="sairConta()">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
             </button>
         </div>
     </div>
 
-    <!-- CORPO -->
     <div class="main-body">
-        
-        <!-- BARRA LATERAL (MENU PREto) -->
         <div class="sidebar">
             <button class="sidebar-btn active" onclick="abrirAba('estoque', this)">
                 <svg viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
@@ -497,47 +141,33 @@
             </button>
         </div>
 
-        <!-- ÁREA DE CONTEÚDO (QUADRADO CINZA) -->
         <div class="content-area">
-            
-            <!-- ABA ESTOQUES -->
             <div id="aba-estoque" class="content-screen active">
                 <div class="content-title">Estoques Atuais</div>
                 <div class="grid-container" id="painel-estoque"></div>
             </div>
 
-            <!-- ABA OBS -->
             <div id="aba-obs" class="content-screen">
                 <div class="content-title">Itens com Observação</div>
                 <div class="grid-container" id="painel-obs"></div>
             </div>
 
-            <!-- ABA SAIU -->
             <div id="aba-saiu" class="content-screen">
                 <div class="content-title">Histórico de Saídas</div>
                 <table class="data-table">
                     <thead>
-                        <tr>
-                            <th>Produto</th>
-                            <th>Qtd</th>
-                            <th>Data</th>
-                            <th>Ações</th>
-                        </tr>
+                        <tr><th>Produto</th><th>Qtd</th><th>Data</th><th>Ações</th></tr>
                     </thead>
                     <tbody id="tabela-saiu"></tbody>
                 </table>
             </div>
 
-            <!-- ABA CÁLCULO SEMANAL -->
             <div id="aba-calculo" class="content-screen">
                 <div class="content-title">Cálculo Semanal (Últimos 7 dias)</div>
                 <button class="calc-btn" onclick="calcularSemanal()">CALCULAR RESUMO</button>
                 <table class="data-table">
                     <thead>
-                        <tr>
-                            <th>Produto</th>
-                            <th>Total que saiu na semana</th>
-                        </tr>
+                        <tr><th>Produto</th><th>Total que saiu na semana</th></tr>
                     </thead>
                     <tbody id="tabela-calculo">
                         <tr><td colspan="2" style="text-align: center;">Clique em "Calcular Resumo" para agrupar os itens.</td></tr>
@@ -545,13 +175,11 @@
                 </table>
             </div>
 
-            <!-- ABA ACABOU -->
             <div id="aba-acabou" class="content-screen">
                 <div class="content-title">Itens Acabados</div>
                 <div class="grid-container" id="painel-acabou"></div>
             </div>
 
-            <!-- ABA USUÁRIOS -->
             <div id="aba-usuarios" class="content-screen">
                 <div class="content-title">Usuários Conectados</div>
                 <div class="grid-container" id="painel-usuarios">
@@ -565,19 +193,16 @@
                 </div>
             </div>
 
-            <!-- ABA LISTA DE COMPRAS -->
             <div id="aba-lista_compras" class="content-screen">
                 <div class="content-title">Listas de Compras Recebidas</div>
                 <div class="grid-container" id="painel-lista"></div>
             </div>
 
-            <!-- ABA CHAT -->
             <div id="aba-chat" class="content-screen">
                 <div class="content-title">My App Chat</div>
                 <div class="chat-area">
                     <div class="chat-messages" id="chat-painel-mensagens">
-                        <div class="msg-bubble received">Enviado do App: Olá, preciso de ajuda com o estoque.</div>
-                        <div class="msg-bubble sent">Painel: Olá! Como posso ajudar?</div>
+                        <!-- Vazio, aguardando mensagens reais -->
                     </div>
                     <div class="chat-input-panel">
                         <input type="text" id="chat-painel-input" placeholder="Digite sua resposta...">
@@ -585,11 +210,9 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
-    <!-- NOTIFICAÇÃO CUSTOMIZADA -->
     <div class="notification-toast" id="notif-toast">
         <div class="notification-icon">🔔</div>
         <div class="notification-text">
@@ -598,7 +221,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE CONFIRMAÇÃO (PARA APAGAR) -->
     <div class="modal-overlay" id="modal-confirm">
         <div class="modal-confirm">
             <h3>Tem certeza que deseja apagar este registro?</h3>
@@ -608,41 +230,32 @@
             </div>
         </div>
     </div>
-
 </div>
 
 <script>
-    // ==========================================
-    // CONEXÃO COM O SERVIDOR NO RENDER
-    // ==========================================
     const URL_SERVIDOR = "https://my-app-sistema.onrender.com";
-
-    // ==========================================
-    // SIMULAÇÃO DE DADOS (Vindos do App)
-    // ==========================================
-    const dadosEstoque = [
-        { id: 1, nome: "Óleo de Soja", qtd: "2", data: "2026-11-12", obs: "", status: "ok", foto: null },
-        { id: 2, nome: "Feijão", qtd: "1", data: "2026-12-27", obs: "Tem pouco", status: "ok", foto: null },
-        { id: 3, nome: "Pão de Hambúrguer", qtd: "0", data: "2026-11-15", obs: "Vence amanhã", status: "acabou", foto: null }
-    ];
-
-    const dadosSairam = [
-        { id: 1, nome: "Feijão", qtd: 1, data: "2026-10-20" },
-        { id: 2, nome: "Óleo de Soja", qtd: 2, data: "2026-10-21" },
-        { id: 3, nome: "Feijão", qtd: 2, data: "2026-10-22" },
-        { id: 4, nome: "Pão de Hambúrguer", qtd: 10, data: "2026-10-23" }
-    ];
-
-    const dadosListaCompras = [
-        { id: 1, item: "Carne Moída", obs: "Comprar 5kg" },
-        { id: 2, item: "Queijo Cheddar", obs: "Fatiado" }
-    ];
-
+    
+    // Arrays vazios para receber os dados reais do banco
+    let dadosEstoque = [];
+    let dadosSairam = [];
+    let dadosListaCompras = [];
     let idParaApagar = null;
 
-    // ==========================================
-    // NAVEGAÇÃO DO MENU
-    // ==========================================
+    // BUSCAR DADOS REAIS DO SERVIDOR
+    async function carregarDadosPainel() {
+        try {
+            const resProdutos = await fetch(`${URL_SERVIDOR}/produtos`);
+            dadosEstoque = await resProdutos.json();
+            
+            const resSaidas = await fetch(`${URL_SERVIDOR}/saidas`);
+            dadosSairam = await resSaidas.json();
+            
+            // Se a lista de compras for implementada no back-end futuramente, ela entraria aqui.
+        } catch (erro) {
+            console.error("Erro ao buscar dados:", erro);
+        }
+    }
+
     function abrirAba(aba, btnElement) {
         document.querySelectorAll('.content-screen').forEach(t => t.classList.remove('active'));
         document.getElementById(`aba-${aba}`).classList.add('active');
@@ -652,10 +265,9 @@
             btnElement.classList.add('active');
         }
 
-        if (aba === 'chat') {
-            document.getElementById('chat-badge').style.display = 'none';
-        }
+        if (aba === 'chat') document.getElementById('chat-badge').style.display = 'none';
 
+        // Chama a renderização correspondente
         if (aba === 'estoque') renderEstoquePainel();
         if (aba === 'obs') renderObsPainel();
         if (aba === 'saiu') renderSaiuPainel();
@@ -663,12 +275,11 @@
         if (aba === 'lista_compras') renderListaPainel();
     }
 
-    // ==========================================
-    // RENDERIZAÇÃO DOS DADOS
-    // ==========================================
     function renderEstoquePainel() {
         const container = document.getElementById('painel-estoque');
         container.innerHTML = '';
+        if (dadosEstoque.length === 0) container.innerHTML = '<p>Nenhum produto no estoque.</p>';
+        
         dadosEstoque.forEach(prod => {
             container.innerHTML += `
                 <div class="card-item">
@@ -676,7 +287,7 @@
                     <div class="card-info">
                         <h4>${prod.nome}</h4>
                         <p>Qtd: ${prod.qtd}</p>
-                        <p>Validade: ${prod.data}</p>
+                        <p>Validade: ${prod.dataVal}</p>
                     </div>
                 </div>
             `;
@@ -705,6 +316,8 @@
     function renderSaiuPainel() {
         const container = document.getElementById('tabela-saiu');
         container.innerHTML = '';
+        if (dadosSairam.length === 0) container.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum item saiu.</td></tr>';
+
         dadosSairam.forEach(item => {
             container.innerHTML += `
                 <tr>
@@ -712,7 +325,7 @@
                     <td>${item.qtd}</td>
                     <td>${item.data}</td>
                     <td>
-                        <button class="action-icon-btn" title="Apagar Registro" onclick="solicitarApagar(${item.id})">
+                        <button class="action-icon-btn" title="Apagar Registro" onclick="solicitarApagar('${item._id}')">
                             <svg viewBox="0 0 24 24" fill="none" stroke="#ff0000" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                     </td>
@@ -748,30 +361,26 @@
         dadosListaCompras.forEach(lista => {
             container.innerHTML += `
                 <div class="card-item">
-                    <div class="card-info">
-                        <h4>${lista.item}</h4>
-                        <p>${lista.obs}</p>
-                    </div>
+                    <div class="card-info"><h4>${lista.item}</h4><p>${lista.obs}</p></div>
                 </div>
             `;
         });
     }
 
-    // ==========================================
-    // LÓGICA DO CÁLCULO SEMANAL
-    // ==========================================
     function calcularSemanal() {
         const container = document.getElementById('tabela-calculo');
         container.innerHTML = '';
 
         const resumo = {};
         dadosSairam.forEach(item => {
-            if (resumo[item.nome]) {
-                resumo[item.nome] += item.qtd;
-            } else {
-                resumo[item.nome] = item.qtd;
-            }
+            if (resumo[item.nome]) resumo[item.nome] += parseInt(item.qtd);
+            else resumo[item.nome] = parseInt(item.qtd);
         });
+
+        if (Object.keys(resumo).length === 0) {
+            container.innerHTML = '<tr><td colspan="2" style="text-align: center;">Nenhuma saída registrada.</td></tr>';
+            return;
+        }
 
         for (const [produto, total] of Object.entries(resumo)) {
             container.innerHTML += `
@@ -783,11 +392,8 @@
         }
     }
 
-    // ==========================================
-    // AÇÕES GERAIS (NOTIFICAÇÃO E MODAL)
-    // ==========================================
+    // AÇÕES GERAIS
     function mostrarNotificacao() {
-        // Toca o som (Beep)
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = audioCtx.createOscillator();
         oscillator.type = 'sine';
@@ -796,14 +402,9 @@
         oscillator.start();
         oscillator.stop(audioCtx.currentTime + 0.1);
 
-        // Mostra o balão personalizado
         const toast = document.getElementById('notif-toast');
         toast.classList.add('show');
-
-        // Esconde o balão depois de 4 segundos
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 4000);
+        setTimeout(() => toast.classList.remove('show'), 4000);
     }
 
     function solicitarApagar(id) {
@@ -816,20 +417,19 @@
         idParaApagar = null;
     }
 
-    function confirmarApagar() {
+    async function confirmarApagar() {
         if (idParaApagar !== null) {
-            const index = dadosSairam.findIndex(item => item.id === idParaApagar);
-            if (index > -1) {
-                dadosSairam.splice(index, 1);
+            try {
+                await fetch(`${URL_SERVIDOR}/saidas/${idParaApagar}`, { method: 'DELETE' });
+                await carregarDadosPainel(); // Atualiza os dados
                 renderSaiuPainel();
+            } catch(erro) {
+                alert("Erro ao apagar no servidor.");
             }
             fecharModal();
         }
     }
 
-    // ==========================================
-    // CHAT DO PAINEL
-    // ==========================================
     function enviarMsgPainel() {
         const input = document.getElementById('chat-painel-input');
         if(input.value) {
@@ -841,19 +441,17 @@
     }
 
     function sairConta() {
-        // Simula a saída da conta (sem alert do navegador)
         const toast = document.getElementById('notif-toast');
         toast.querySelector('h4').innerText = "Saindo...";
         toast.querySelector('p').innerText = "Redirecionando para a tela de login.";
         toast.classList.add('show');
-        setTimeout(() => {
-            toast.classList.remove('show');
-            // Aqui você pode colocar um window.location.href = 'login.html' no futuro
-        }, 3000);
+        setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
-    // Inicializa a tela
-    renderEstoquePainel();
+    // Inicializa buscando os dados reais
+    carregarDadosPainel().then(() => {
+        renderEstoquePainel();
+    });
 </script>
 
 </body>

@@ -34,7 +34,7 @@ const Usuario = mongoose.model('Usuario', new mongoose.Schema({
     nome: String, foto: String, ultimoAcesso: { type: Date, default: Date.now }
 }));
 
-// ROTAS DE PRODUTOS (CRIAR, LISTAR, EDITAR, APAGAR)
+// ROTAS DE PRODUTOS
 app.get('/produtos', async (req, res) => { 
     try { res.json(await Produto.find()); } catch (erro) { res.status(500).json({ erro: erro.message }); } 
 });

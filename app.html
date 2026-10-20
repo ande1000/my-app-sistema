@@ -72,7 +72,6 @@
         .list-actions { display: flex; gap: 5px; }
         .btn-icon { border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; border-radius: 5px; padding: 5px; }
         
-        /* CHAT AJUSTADO */
         .chat-container { display: flex; flex-direction: column; padding: 15px; gap: 10px; height: calc(100vh - 200px); overflow-y: auto; }
         .chat-bubble { max-width: 80%; padding: 10px; border-radius: 15px; font-size: 14px; font-weight: bold; word-wrap: break-word; }
         .chat-bubble.received { background-color: #ff0000; color: #fff; align-self: flex-start; border-bottom-left-radius: 0; }
@@ -317,7 +316,6 @@
     </div>
 </div>
 
-<!-- IMPORTAÇÃO DO SOCKET.IO CLIENTE -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
 <script>
@@ -325,77 +323,52 @@
 
     let produtos = [];
     let itensSairam = [];
-    let listaCompras = [];
+    let listaCompras = []; // Agora vai puxar do banco
     let idProdutoTemporario = null; 
 
-    // ==========================================
-    // CONEXÃO COM O CHAT EM TEMPO REAL
-    // ==========================================
+    // CONEXÃO COM O CHAT
     const socket = io(URL_SERVIDOR);
-
-    socket.on('connect', () => {
-        console.log("Conectado ao chat!");
-        carregarMensagensAntigas(); // Puxa o histórico ao conectar
-    });
-
-    socket.on('receberMensagem', (msg) => {
-        adicionarMensagemNaTela(msg);
-    });
+    socket.on('connect', () => { carregarMensagensAntigas(); });
+    socket.on('receberMensagem', (msg) => { adicionarMensagemNaTela(msg); });
 
     async function carregarMensagensAntigas() {
         try {
             const res = await fetch(`${URL_SERVIDOR}/mensagens`);
             const msgs = await res.json();
             const chat = document.getElementById('chat-mensagens');
-            chat.innerHTML = ''; // Limpa antes de adicionar
+            chat.innerHTML = ''; 
             msgs.forEach(msg => adicionarMensagemNaTela(msg));
-        } catch(erro) {
-            console.log("Erro ao carregar histórico do chat", erro);
-        }
+        } catch(erro) {}
     }
 
     function adicionarMensagemNaTela(msg) {
         const chat = document.getElementById('chat-mensagens');
         const div = document.createElement('div');
-        
-        // Se quem enviou foi o app, a bolha é verde (sent). Se foi o painel, é vermelha (received).
-        if (msg.remetente === 'app') {
-            div.className = 'chat-bubble sent';
-        } else {
-            div.className = 'chat-bubble received';
-        }
-        
+        div.className = msg.remetente === 'app' ? 'chat-bubble sent' : 'chat-bubble received';
         div.innerText = msg.texto;
         chat.appendChild(div);
-        chat.scrollTop = chat.scrollHeight; // Rola para a última mensagem
+        chat.scrollTop = chat.scrollHeight;
     }
 
     function enviarMensagem() {
         const input = document.getElementById('chat-input');
-        const texto = input.value;
-        
-        if (texto.trim() !== "") {
-            // Envia para o servidor
-            socket.emit('enviarMensagem', {
-                remetente: 'app',
-                texto: texto
-            });
-            input.value = ''; // Limpa o campo
+        if (input.value.trim() !== "") {
+            socket.emit('enviarMensagem', { remetente: 'app', texto: input.value });
+            input.value = '';
         }
     }
 
-    // ==========================================
-    // LÓGICA DO ESTOQUE E OUTRAS FUNÇÕES
-    // ==========================================
+    // LÓGICA DO ESTOQUE
     async function carregarDados() {
         try {
             const response = await fetch(`${URL_SERVIDOR}/produtos`);
-            if (!response.ok) throw new Error("Erro no servidor");
             produtos = await response.json();
             
             const responseSaidas = await fetch(`${URL_SERVIDOR}/saidas`);
-            if (!responseSaidas.ok) throw new Error("Erro no servidor");
             itensSairam = await responseSaidas.json();
+
+            const responseLista = await fetch(`${URL_SERVIDOR}/lista`);
+            listaCompras = await responseLista.json();
         } catch (erro) {
             console.error("Erro ao carregar dados:", erro);
             mostrarToast("Erro ao conectar com o banco de dados.", true);
@@ -610,7 +583,6 @@
     
     async function confirmarApagar() {
         fecharModal('modal-apagar');
-
         document.getElementById('loading-title').innerText = "Aguarde um momento...";
         document.getElementById('loading-text').innerText = "Seu produto está sendo apagado!";
         document.getElementById('loading-overlay').classList.add('active');
@@ -618,7 +590,6 @@
         try {
             await fetch(`${URL_SERVIDOR}/produtos/${idProdutoTemporario}`, { method: 'DELETE' });
             await carregarDados();
-            
             document.getElementById('loading-overlay').classList.remove('active');
             mostrarToast("Produto apagado!");
             renderEstoque();
@@ -715,16 +686,59 @@
         }
     }
 
-    function adicionarCompra() {
-        const nome = document.getElementById('compras-nome').value;
-        if(nome) { listaCompras.push(nome); document.getElementById('compras-nome').value = ''; renderListaCompras(); }
+    // --- LISTA DE COMPRAS (AGORA INTEGRADA COM O BANCO) ---
+    async function adicionarCompra() {
+        const input = document.getElementById('compras-nome');
+        const nome = input.value;
+        if(!nome) return;
+
+        try {
+            // Envia para o servidor salvar no MongoDB
+            await fetch(`${URL_SERVIDOR}/lista`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ item: nome, obs: "" })
+            });
+            
+            input.value = '';
+            await carregarDados(); // Recarrega a lista atualizada
+            renderListaCompras();
+            mostrarToast("Adicionado à lista!");
+        } catch(erro) {
+            mostrarToast("Erro ao adicionar na lista.", true);
+        }
     }
+
     function renderListaCompras() {
         const container = document.getElementById('lista-compras');
         container.innerHTML = '';
-        listaCompras.forEach((item, index) => {
-            container.innerHTML += `<div class="list-item"><div class="list-item-info">${item}</div><button class="btn-icon btn-apagar" onclick="listaCompras.splice(${index}, 1); renderListaCompras();"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div>`;
+        
+        if (listaCompras.length === 0) {
+            container.innerHTML = '<p style="text-align:center;">Sua lista está vazia.</p>';
+            return;
+        }
+
+        listaCompras.forEach((item) => {
+            container.innerHTML += `
+                <div class="list-item">
+                    <div class="list-item-info">${item.item}</div>
+                    <button class="btn-icon btn-apagar" onclick="removerCompra('${item._id}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+            `;
         });
+    }
+
+    async function removerCompra(id) {
+        try {
+            await fetch(`${URL_SERVIDOR}/lista/${id}`, { method: 'DELETE' });
+            await carregarDados();
+            renderListaCompras();
+            mostrarToast("Item removido da lista.");
+        } catch(erro) {
+            mostrarToast("Erro ao remover item.", true);
+        }
     }
 </script>
 

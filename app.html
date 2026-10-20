@@ -83,7 +83,7 @@
             justify-content: center; 
             align-items: center; 
             padding: 0;
-            margin-top: -15px;
+            margin-top: -15px; /* ALTERADO AQUI PARA SUBIR MAIS */
         }
         .nav-btn.central svg { stroke: var(--primary-red); stroke-width: 4; width: 32px; height: 32px; margin-bottom: 0; }
 
@@ -808,18 +808,6 @@
             mostrarToast("Erro ao remover item.", true);
         }
     }
-
-    // ✅ HEARTBEAT: mantém o usuário online no painel (a cada 2 minutos)
-    setInterval(() => {
-        const nome = document.getElementById('main-user-name').innerText;
-        if (nome && nome !== 'nome do usuário') {
-            fetch(`${URL_SERVIDOR}/usuarios`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, foto: window.fotoUsuario || null })
-            }).catch(() => {});
-        }
-    }, 120000);
 </script>
 
 </body>

@@ -18,7 +18,14 @@
         .btn-notificacao { background-color: var(--icon-yellow); border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; }
         .btn-notificacao:active { transform: scale(0.95); }
         .chat-badge-container { position: relative; cursor: pointer; }
-        .chat-badge { position: absolute; top: -5px; right: -5px; background-color: #00ff00; color: #000; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+        
+        /* BOLINHA DE NOTIFICAÇÃO DO CHAT */
+        .chat-badge { 
+            position: absolute; top: -5px; right: -5px; background-color: #00ff00; color: #000; 
+            font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; 
+            display: none; /* Começa escondida */
+            justify-content: center; align-items: center; 
+        }
         .btn-sair-conta { background: none; border: none; cursor: pointer; }
 
         /* CORPO */
@@ -59,7 +66,7 @@
         /* CHAT */
         .chat-area { display: flex; flex-direction: column; height: 100%; }
         .chat-messages { flex: 1; background: #fff; border: 2px solid #000; border-radius: 8px; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
-        .msg-bubble { padding: 10px 15px; border-radius: 15px; font-size: 14px; max-width: 70%; }
+        .msg-bubble { padding: 10px 15px; border-radius: 15px; font-size: 14px; max-width: 70%; word-wrap: break-word; }
         .msg-bubble.sent { background-color: #ff0000; color: #fff; align-self: flex-end; border-bottom-right-radius: 0; }
         .msg-bubble.received { background-color: #00ff00; color: #000; align-self: flex-start; border-bottom-left-radius: 0; }
         .chat-input-panel { display: flex; gap: 10px; }
@@ -99,10 +106,12 @@
 
         <div class="header-actions">
             <button class="btn-notificacao" onclick="mostrarNotificacao()">notificações</button>
+            
             <div class="chat-badge-container" onclick="abrirAba('chat')">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                 <div class="chat-badge" id="chat-badge">1</div>
             </div>
+
             <button class="btn-sair-conta" title="Sair da Conta" onclick="sairConta()">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
             </button>
@@ -230,6 +239,9 @@
     </div>
 </div>
 
+<!-- IMPORTAÇÃO DO SOCKET.IO CLIENTE -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
 <script>
     const URL_SERVIDOR = "https://my-app-sistema.onrender.com";
     
@@ -237,22 +249,90 @@
     let dadosSairam = [];
     let dadosListaCompras = [];
     let idParaApagar = null;
-    
-    let abaAtual = 'estoque'; // Guarda qual aba está aberta
+    let abaAtual = 'estoque';
+    let temMsgNaoLida = false;
+
+    // ==========================================
+    // CONEXÃO COM O CHAT EM TEMPO REAL
+    // ==========================================
+    const socket = io(URL_SERVIDOR);
+
+    socket.on('connect', () => {
+        console.log("Painel conectado ao chat!");
+        carregarMensagensPainel(); // Puxa histórico ao conectar
+    });
+
+    socket.on('receberMensagem', (msg) => {
+        adicionarMensagemNoPainel(msg);
+        
+        // Se a mensagem for do App e não estiver na aba do chat, mostra a bolinha verde
+        if (msg.remetente === 'app' && abaAtual !== 'chat') {
+            const badge = document.getElementById('chat-badge');
+            badge.style.display = 'flex';
+            badge.innerText = '1'; // Pode ser incrementado, mas 1 aviso já basta
+            temMsgNaoLida = true;
+            
+            // Toca um som de notificação
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+            oscillator.connect(audioCtx.destination);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.1);
+        }
+    });
+
+    async function carregarMensagensPainel() {
+        try {
+            const res = await fetch(`${URL_SERVIDOR}/mensagens`);
+            const msgs = await res.json();
+            const chat = document.getElementById('chat-painel-mensagens');
+            chat.innerHTML = ''; 
+            msgs.forEach(msg => adicionarMensagemNoPainel(msg));
+        } catch(erro) {
+            console.log("Erro ao carregar histórico", erro);
+        }
+    }
+
+    function adicionarMensagemNoPainel(msg) {
+        const chat = document.getElementById('chat-painel-mensagens');
+        const div = document.createElement('div');
+        
+        // No painel: Painel envia é vermelho (sent). App envia é verde (received).
+        if (msg.remetente === 'painel') {
+            div.className = 'msg-bubble sent';
+        } else {
+            div.className = 'msg-bubble received';
+        }
+        
+        div.innerText = msg.texto;
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function enviarMsgPainel() {
+        const input = document.getElementById('chat-painel-input');
+        const texto = input.value;
+        
+        if (texto.trim() !== "") {
+            socket.emit('enviarMensagem', {
+                remetente: 'painel',
+                texto: texto
+            });
+            input.value = '';
+        }
+    }
 
     // ==========================================
     // RELÓGIO AUTOMÁTICO (ATUALIZA A CADA 3 SEG)
     // ==========================================
     setInterval(async () => {
         await carregarDadosPainel();
-        
-        // Se a aba atual for estoque, ele atualiza a lista na tela
         if (abaAtual === 'estoque') renderEstoquePainel();
         if (abaAtual === 'obs') renderObsPainel();
         if (abaAtual === 'saiu') renderSaiuPainel();
         if (abaAtual === 'acabou') renderAcabouPainel();
-        // O cálculo e lista de compras não atualizam automaticamente para não atrapalhar a leitura.
-        
     }, 3000);
 
     async function carregarDadosPainel() {
@@ -268,7 +348,7 @@
     }
 
     function abrirAba(aba, btnElement) {
-        abaAtual = aba; // Atualiza a variável para o relógio saber o que renderizar
+        abaAtual = aba;
         document.querySelectorAll('.content-screen').forEach(t => t.classList.remove('active'));
         document.getElementById(`aba-${aba}`).classList.add('active');
 
@@ -277,9 +357,12 @@
             btnElement.classList.add('active');
         }
 
-        if (aba === 'chat') document.getElementById('chat-badge').style.display = 'none';
+        if (aba === 'chat') {
+            // Ao abrir o chat, esconde a bolinha verde e zera o aviso
+            document.getElementById('chat-badge').style.display = 'none';
+            temMsgNaoLida = false;
+        }
 
-        // Força um carregamento imediato ao clicar na aba
         carregarDadosPainel().then(() => {
             if (aba === 'estoque') renderEstoquePainel();
             if (aba === 'obs') renderObsPainel();
@@ -292,7 +375,6 @@
     function renderEstoquePainel() {
         const container = document.getElementById('painel-estoque');
         if(!container) return;
-        
         container.innerHTML = '';
         if (dadosEstoque.length === 0) container.innerHTML = '<p>Nenhum produto no estoque.</p>';
         
@@ -313,7 +395,6 @@
     function renderObsPainel() {
         const container = document.getElementById('painel-obs');
         if(!container) return;
-        
         container.innerHTML = '';
         const comObs = dadosEstoque.filter(p => p.obs && p.obs.trim() !== '');
         if (comObs.length === 0) container.innerHTML = '<p>Nenhuma observação.</p>';
@@ -334,7 +415,6 @@
     function renderSaiuPainel() {
         const container = document.getElementById('tabela-saiu');
         if(!container) return;
-        
         container.innerHTML = '';
         if (dadosSairam.length === 0) container.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum item saiu.</td></tr>';
 
@@ -357,7 +437,6 @@
     function renderAcabouPainel() {
         const container = document.getElementById('painel-acabou');
         if(!container) return;
-        
         container.innerHTML = '';
         const acabados = dadosEstoque.filter(p => p.status === 'acabou');
         if (acabados.length === 0) container.innerHTML = '<p>Nenhum item acabado.</p>';
@@ -378,7 +457,6 @@
     function renderListaPainel() {
         const container = document.getElementById('painel-lista');
         if(!container) return;
-        
         container.innerHTML = '';
         if (dadosListaCompras.length === 0) container.innerHTML = '<p>Nenhuma lista recebida.</p>';
 
@@ -416,7 +494,6 @@
         }
     }
 
-    // AÇÕES GERAIS
     function mostrarNotificacao() {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = audioCtx.createOscillator();
@@ -445,22 +522,12 @@
         if (idParaApagar !== null) {
             try {
                 await fetch(`${URL_SERVIDOR}/saidas/${idParaApagar}`, { method: 'DELETE' });
-                await carregarDadosPainel(); // Atualiza os dados
+                await carregarDadosPainel();
                 renderSaiuPainel();
             } catch(erro) {
                 alert("Erro ao apagar no servidor.");
             }
             fecharModal();
-        }
-    }
-
-    function enviarMsgPainel() {
-        const input = document.getElementById('chat-painel-input');
-        if(input.value) {
-            const chat = document.getElementById('chat-painel-mensagens');
-            chat.innerHTML += `<div class="msg-bubble sent">Painel: ${input.value}</div>`;
-            input.value = '';
-            chat.scrollTop = chat.scrollHeight;
         }
     }
 
@@ -472,7 +539,6 @@
         setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
-    // Inicializa o painel
     carregarDadosPainel().then(() => {
         renderEstoquePainel();
     });

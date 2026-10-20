@@ -9,6 +9,7 @@
         :root { --primary-red: #ff0000; --primary-green: #00cc00; --bg-beige: #fcf7d4; --text-black: #000; }
 
         body { background-color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        
         .app-container { width: 100%; max-width: 400px; height: 100vh; max-height: 800px; background-color: var(--bg-beige); position: relative; overflow: hidden; border: 1px solid #ccc; }
         
         .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; overflow-y: auto; padding-bottom: 130px; }
@@ -30,6 +31,7 @@
         .phone-number { color: var(--primary-green); font-weight: bold; font-size: 18px; display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 15px; }
         .settings-icon { position: absolute; top: 15px; right: 15px; width: 30px; height: 30px; cursor: pointer; z-index: 10; }
 
+        /* BARRA INFERIOR ALTA E BOTÕES SUBIDOS */
         .bottom-nav { background-color: var(--primary-red); display: flex; justify-content: space-around; align-items: flex-start; position: absolute; bottom: 0; left: 0; width: 100%; height: 110px; padding-top: 15px; padding-bottom: 35px; z-index: 100; }
         .nav-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; cursor: pointer; color: var(--text-black); font-size: 9px; font-weight: bold; text-transform: uppercase; width: 45px; height: 70px; padding: 0; }
         .nav-btn svg { width: 28px; height: 28px; fill: none; stroke: #fff; stroke-width: 2; margin-bottom: 6px; }
@@ -93,8 +95,6 @@
 
         .toast { position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%); background-color: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; font-weight: bold; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; white-space: nowrap; }
         .toast.show { opacity: 1; }
-        
-        /* ESTILO DO ERRO */
         .toast.error { background-color: #cc0000; }
     </style>
 </head>
@@ -102,7 +102,6 @@
 
 <div class="app-container">
 
-    <!-- TELA DE LOGIN -->
     <div id="tela-login" class="screen active">
         <div class="login-header">
             <h1>LOGGIN</h1>
@@ -115,7 +114,6 @@
         <button class="btn-green" onclick="irParaVerificacao()">CRIAR</button>
     </div>
 
-    <!-- TELA DE VERIFICAÇÃO -->
     <div id="tela-verificacao" class="screen">
         <div class="login-header">
             <h1>VERIFICAÇÃO</h1>
@@ -127,7 +125,6 @@
         <button class="btn-green" onclick="irParaCriacaoUsuario()">CONCLUIR</button>
     </div>
 
-    <!-- TELA DE CRIAÇÃO DE USUÁRIO -->
     <div id="tela-criacao" class="screen">
         <div class="login-header">
             <h1>CRIAR USUÁRIO</h1>
@@ -145,7 +142,6 @@
         <button class="btn-green" onclick="finalizarCriacao()">CRIAR USUÁRIO</button>
     </div>
 
-    <!-- TELA PRINCIPAL -->
     <div id="tela-principal" class="screen">
         <div class="main-header">
             <div class="settings-icon">
@@ -168,7 +164,6 @@
         </div>
     </div>
 
-    <!-- TELA DE ESTOQUE -->
     <div id="tela-estoque" class="screen">
         <div class="header-title">
             <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
@@ -177,7 +172,6 @@
         <div class="stock-list" id="lista-estoque"></div>
     </div>
 
-    <!-- TELA DE CRIAR PRODUTO -->
     <div id="tela-criar-produto" class="screen">
         <div class="header-title">
             <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
@@ -197,7 +191,6 @@
         </div>
     </div>
 
-    <!-- TELA SAIR (POP-UP) -->
     <div id="tela-sair" class="screen" style="background: rgba(0,0,0,0.5);">
         <div style="background: #fff; margin: auto; width: 90%; padding: 20px; border-radius: 20px; text-align: center;">
             <h1 style="font-size: 30px; font-weight: 900; margin-bottom: 20px;">SAIU</h1>
@@ -210,7 +203,6 @@
         </div>
     </div>
 
-    <!-- TELA ACABOU -->
     <div id="tela-acabou" class="screen">
         <div class="header-title">
             <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
@@ -219,7 +211,6 @@
         <div class="list-container" id="lista-acabou"></div>
     </div>
 
-    <!-- TELA OBS -->
     <div id="tela-obs" class="screen">
         <div class="header-title">
             <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
@@ -228,7 +219,6 @@
         <div class="list-container" id="lista-obs"></div>
     </div>
 
-    <!-- TELA CÂMERA -->
     <div id="tela-camera" class="screen">
         <div class="header-title">
             <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
@@ -239,7 +229,6 @@
         </div>
     </div>
 
-    <!-- TELA SAÍU HISTÓRICO -->
     <div id="tela-saiu-hist" class="screen">
         <div class="header-title">
             <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
@@ -248,7 +237,6 @@
         <div class="list-container" id="lista-saiu"></div>
     </div>
 
-    <!-- TELA LISTA DE COMPRAS -->
     <div id="tela-lista" class="screen">
         <div class="header-title">
             <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
@@ -263,7 +251,6 @@
         </div>
     </div>
 
-    <!-- TELA CHAT -->
     <div id="tela-chat" class="screen" style="padding-bottom: 140px;">
         <div class="header-title">
             <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
@@ -279,7 +266,6 @@
         </div>
     </div>
 
-    <!-- MODAIS (POP-UPS) -->
     <div class="modal-overlay" id="modal-repor">
         <div class="modal-content">
             <h2>REPOR ESTOQUE</h2>
@@ -315,7 +301,6 @@
         </div>
     </div>
 
-    <!-- BARRA DE NAVEGAÇÃO -->
     <div class="bottom-nav" id="bottom-nav-bar" style="display: none;">
         <button class="nav-btn" onclick="abrirTela('tela-estoque')"><svg viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>estoques</button>
         <button class="nav-btn" onclick="abrirTela('tela-acabou')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>acabou</button>
@@ -331,16 +316,13 @@
 </div>
 
 <script>
-    // URL DO SERVIDOR NO RENDER
     const URL_SERVIDOR = "https://my-app-sistema.onrender.com";
 
-    // ARRAYS VAZIOS - DADOS REAIS VÊM DO BANCO
     let produtos = [];
     let itensSairam = [];
     let listaCompras = [];
     let idProdutoTemporario = null; 
 
-    // CARREGA OS DADOS REAIS DO MONGODB
     async function carregarDados() {
         try {
             const response = await fetch(`${URL_SERVIDOR}/produtos`);
@@ -405,7 +387,6 @@
         }
     }
 
-    // --- CRIAR PRODUTO REAL ---
     async function criarProduto() {
         const nome = document.getElementById('prod-nome').value;
         const qtd = document.getElementById('prod-qtd').value;
@@ -429,7 +410,7 @@
             });
 
             if(response.ok) {
-                await carregarDados(); // Atualiza a lista puxando do banco
+                await carregarDados();
                 document.getElementById('prod-nome').value = '';
                 document.getElementById('prod-qtd').value = '';
                 document.getElementById('photo-preview-product').innerHTML = 'FOTO<br>DO<br>PRODUTO';
@@ -476,7 +457,6 @@
         });
     }
 
-    // --- EDITAR STATUS (ACABOU / REPOR) ---
     async function marcarAcabou(id) {
         const prod = produtos.find(p => p._id === id);
         if(prod) {
@@ -569,7 +549,6 @@
         }
     }
 
-    // --- TELAS ACABOU E OBS ---
     function renderAcabou() {
         const container = document.getElementById('lista-acabou');
         container.innerHTML = '';
@@ -602,7 +581,6 @@
         });
     }
 
-    // --- SAÍDA E HISTÓRICO ---
     function abrirPopUpSair(nomeProd) {
         document.getElementById('sair-nome').value = nomeProd;
         document.getElementById('sair-qtd').value = '';
@@ -658,7 +636,6 @@
         }
     }
 
-    // --- LISTA E CHAT ---
     function adicionarCompra() {
         const nome = document.getElementById('compras-nome').value;
         if(nome) { listaCompras.push(nome); document.getElementById('compras-nome').value = ''; renderListaCompras(); }

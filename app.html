@@ -343,13 +343,23 @@
     // ==========================================
     const URL_SERVIDOR = "https://my-app-sistema.onrender.com";
 
-    let produtos = [
-        { id: 1, nome: "Óleo de Soja", qtd: "2", dataReg: "2026-11-09", dataVal: "2026-11-12", obs: "Só tem 2", foto: null, status: "ok" },
-        { id: 2, nome: "Feijão", qtd: "1", dataReg: "2026-10-22", dataVal: "2026-12-27", obs: "", foto: null, status: "ok" }
-    ];
+    let produtos = [];
     let itensSairam = [];
     let listaCompras = [];
-    let idProdutoTemporario = null; // Para os modais
+    let idProdutoTemporario = null; 
+
+    // Carrega os produtos do banco de dados assim que o app abre
+    async function carregarDados() {
+        try {
+            const response = await fetch(`${URL_SERVIDOR}/produtos`);
+            produtos = await response.json();
+            
+            const responseSaidas = await fetch(`${URL_SERVIDOR}/saidas`);
+            itensSairam = await responseSaidas.json();
+        } catch (erro) {
+            console.error("Erro ao carregar dados:", erro);
+        }
+    }
 
     function abrirTela(telaId) {
         document.querySelectorAll('.screen').forEach(t => t.classList.remove('active'));
@@ -379,6 +389,7 @@
     // --- AUTENTICAÇÃO ---
     function irParaVerificacao() { if(document.getElementById('email').value) abrirTela('tela-verificacao'); }
     function irParaCriacaoUsuario() { if(document.getElementById('codigo').value.length === 4) abrirTela('tela-criacao'); }
+    
     function previewImage(event, previewId) {
         const reader = new FileReader();
         reader.onload = function(){
@@ -388,35 +399,51 @@
         };
         if(event.target.files[0]) reader.readAsDataURL(event.target.files[0]);
     }
+    
     function finalizarCriacao() {
         if(document.getElementById('nome-usuario').value) {
             document.getElementById('main-user-name').innerText = document.getElementById('nome-usuario').value;
             if(window.fotoUsuario) document.getElementById('main-photo').innerHTML = `<img src="${window.fotoUsuario}">`;
             abrirTela('tela-principal');
+            carregarDados(); // Carrega os dados reais do banco ao entrar
         }
     }
 
     // --- PRODUTOS ---
-    function criarProduto() {
+    async function criarProduto() {
         const nome = document.getElementById('prod-nome').value;
         const qtd = document.getElementById('prod-qtd').value;
         if(!nome || !qtd) { mostrarToast("Preencha nome e quantidade!"); return; }
 
-        produtos.push({
-            id: Date.now(), nome, qtd,
+        const novoProduto = {
+            nome: nome,
+            qtd: qtd,
             dataReg: document.getElementById('prod-reg').value,
             dataVal: document.getElementById('prod-val').value,
             obs: document.getElementById('prod-obs').value,
             foto: window.fotoProduto || null,
             status: "ok"
-        });
-        
-        document.getElementById('prod-nome').value = '';
-        document.getElementById('prod-qtd').value = '';
-        document.getElementById('photo-preview-product').innerHTML = 'FOTO<br>DO<br>PRODUTO';
-        window.fotoProduto = null;
-        abrirTela('tela-estoque');
-        mostrarToast("Produto criado!");
+        };
+
+        try {
+            const response = await fetch(`${URL_SERVIDOR}/produtos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(novoProduto)
+            });
+
+            if(response.ok) {
+                await carregarDados(); // Recarrega a lista do banco
+                document.getElementById('prod-nome').value = '';
+                document.getElementById('prod-qtd').value = '';
+                document.getElementById('photo-preview-product').innerHTML = 'FOTO<br>DO<br>PRODUTO';
+                window.fotoProduto = null;
+                abrirTela('tela-estoque');
+                mostrarToast("Produto criado!");
+            }
+        } catch(erro) {
+            mostrarToast("Erro ao criar produto.");
+        }
     }
 
     function renderEstoque() {
@@ -427,8 +454,6 @@
             const div = document.createElement('div');
             div.className = 'stock-item';
             let imgHtml = prod.foto ? `<img src="${prod.foto}">` : 'FOTO';
-            
-            // Se o status for acabou, deixa o botão vermelho mais escuro
             let classeAcabou = prod.status === 'acabou' ? 'marcado' : '';
 
             div.innerHTML = `
@@ -438,10 +463,10 @@
                     <div class="stock-dates">qtd: ${prod.qtd}<br>reg: ${prod.dataReg || '--'}<br>val: ${prod.dataVal || '--'}</div>
                 </div>
                 <div class="stock-actions">
-                    <button class="action-btn btn-repor" onclick="abrirModalRepor(${prod.id}, '${prod.nome}')">REPOR</button>
-                    <button class="action-btn btn-acabou ${classeAcabou}" onclick="marcarAcabou(${prod.id})">acabou</button>
-                    <button class="action-btn btn-obs" onclick="abrirModalObs(${prod.id}, '${prod.nome}', '${prod.obs}')">observação</button>
-                    <button class="action-btn btn-apagar" onclick="abrirModalApagar(${prod.id})">apaga</button>
+                    <button class="action-btn btn-repor" onclick="abrirModalRepor('${prod._id}', '${prod.nome}')">REPOR</button>
+                    <button class="action-btn btn-acabou ${classeAcabou}" onclick="marcarAcabou('${prod._id}')">acabou</button>
+                    <button class="action-btn btn-obs" onclick="abrirModalObs('${prod._id}', '${prod.nome}', '${prod.obs}')">observação</button>
+                    <button class="action-btn btn-apagar" onclick="abrirModalApagar('${prod._id}')">apaga</button>
                 </div>
                 <button class="btn-saiu-large" onclick="abrirPopUpSair('${prod.nome}')">SAIU</button>
             `;
@@ -449,11 +474,17 @@
         });
     }
 
-    function marcarAcabou(id) {
-        const prod = produtos.find(p => p.id === id);
+    async function marcarAcabou(id) {
+        const prod = produtos.find(p => p._id === id);
         if(prod) {
-            prod.status = prod.status === 'acabou' ? 'ok' : 'acabou';
-            mostrarToast(prod.status === 'acabou' ? "Item marcado como ACABOU" : "Item reposto!");
+            const novoStatus = prod.status === 'acabou' ? 'ok' : 'acabou';
+            await fetch(`${URL_SERVIDOR}/produtos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: novoStatus })
+            });
+            await carregarDados();
+            mostrarToast(novoStatus === 'acabou' ? "Item marcado como ACABOU" : "Item reposto!");
             renderEstoque();
         }
     }
@@ -463,52 +494,62 @@
         document.getElementById(modalId).classList.remove('active');
     }
 
-    // Pop-up Repor
     function abrirModalRepor(id, nome) {
         idProdutoTemporario = id;
         document.getElementById('repor-nome-prod').innerText = `Produto: ${nome}`;
         document.getElementById('repor-qtd').value = '';
         document.getElementById('modal-repor').classList.add('active');
     }
-    function confirmarRepor() {
+    
+    async function confirmarRepor() {
         const qtdAdicionar = parseInt(document.getElementById('repor-qtd').value);
         if(!qtdAdicionar || qtdAdicionar <= 0) { mostrarToast("Digite uma quantidade válida."); return; }
         
-        const prod = produtos.find(p => p.id === idProdutoTemporario);
+        const prod = produtos.find(p => p._id === idProdutoTemporario);
         if(prod) {
-            prod.qtd = (parseInt(prod.qtd) || 0) + qtdAdicionar;
-            prod.status = 'ok'; // Se estava acabado, volta ao normal
+            const novaQtd = (parseInt(prod.qtd) || 0) + qtdAdicionar;
+            await fetch(`${URL_SERVIDOR}/produtos/${idProdutoTemporario}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ qtd: novaQtd.toString(), status: 'ok' })
+            });
+            await carregarDados();
             mostrarToast(`${qtdAdicionar} adicionado(s) ao estoque.`);
             fecharModal('modal-repor');
             renderEstoque();
         }
     }
 
-    // Pop-up OBS
     function abrirModalObs(id, nome, obsAtual) {
         idProdutoTemporario = id;
         document.getElementById('obs-nome-prod').innerText = `Produto: ${nome}`;
         document.getElementById('obs-texto').value = obsAtual !== 'undefined' ? obsAtual : '';
         document.getElementById('modal-obs').classList.add('active');
     }
-    function confirmarObs() {
+    
+    async function confirmarObs() {
         const texto = document.getElementById('obs-texto').value;
-        const prod = produtos.find(p => p.id === idProdutoTemporario);
-        if(prod) {
-            prod.obs = texto;
-            mostrarToast("Observação salva!");
-            fecharModal('modal-obs');
-            renderEstoque();
-        }
+        await fetch(`${URL_SERVIDOR}/produtos/${idProdutoTemporario}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ obs: texto })
+        });
+        await carregarDados();
+        mostrarToast("Observação salva!");
+        fecharModal('modal-obs');
+        renderEstoque();
     }
 
-    // Pop-up Apagar
     function abrirModalApagar(id) {
         idProdutoTemporario = id;
         document.getElementById('modal-apagar').classList.add('active');
     }
-    function confirmarApagar() {
-        produtos = produtos.filter(p => p.id !== idProdutoTemporario);
+    
+    async function confirmarApagar() {
+        await fetch(`${URL_SERVIDOR}/produtos/${idProdutoTemporario}`, {
+            method: 'DELETE'
+        });
+        await carregarDados();
         mostrarToast("Produto apagado!");
         fecharModal('modal-apagar');
         renderEstoque();
@@ -525,7 +566,7 @@
             container.innerHTML += `
                 <div class="list-item">
                     <div class="list-item-info">${prod.nome}<span>Qtd atual: ${prod.qtd}</span></div>
-                    <button class="action-btn btn-repor" onclick="abrirModalRepor(${prod.id}, '${prod.nome}')">REPOR</button>
+                    <button class="action-btn btn-repor" onclick="abrirModalRepor('${prod._id}', '${prod.nome}')">REPOR</button>
                 </div>
             `;
         });
@@ -542,7 +583,7 @@
             container.innerHTML += `
                 <div class="list-item">
                     <div class="list-item-info">${prod.nome}<span>OBS: ${prod.obs}</span></div>
-                    <button class="action-btn btn-apagar" onclick="abrirModalApagar(${prod.id})">Apagar</button>
+                    <button class="action-btn btn-apagar" onclick="abrirModalApagar('${prod._id}')">Apagar</button>
                 </div>
             `;
         });
@@ -556,15 +597,24 @@
         abrirTela('tela-sair');
     }
 
-    function confirmarSaida() {
+    async function confirmarSaida() {
         const nome = document.getElementById('sair-nome').value;
         const qtd = document.getElementById('sair-qtd').value;
         const data = document.getElementById('sair-data').value;
         if(!qtd) { mostrarToast("Digite a quantidade que saiu!"); return; }
 
-        itensSairam.push({ id: Date.now(), nome, qtd, data });
-        mostrarToast("Saída registrada!");
-        abrirTela('tela-saiu-hist');
+        try {
+            await fetch(`${URL_SERVIDOR}/saidas`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, qtd, data })
+            });
+            await carregarDados();
+            mostrarToast("Saída registrada!");
+            abrirTela('tela-saiu-hist');
+        } catch(erro) {
+            mostrarToast("Erro ao registrar saída.");
+        }
     }
 
     function renderSaiu() {
@@ -578,15 +628,16 @@
                     <div class="list-item-info">${item.nome}<span>Qtd: ${item.qtd} | Data: ${item.data}</span></div>
                     <div class="list-actions">
                         <button class="btn-icon" style="background: #800080;" onclick="alert('Função de editar em breve!')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
-                        <button class="btn-icon btn-apagar" onclick="apagarSaida(${item.id})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                        <button class="btn-icon btn-apagar" onclick="apagarSaida('${item._id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                     </div>
                 </div>
             `;
         });
     }
 
-    function apagarSaida(id) {
-        itensSairam = itensSairam.filter(item => item.id !== id);
+    async function apagarSaida(id) {
+        await fetch(`${URL_SERVIDOR}/saidas/${id}`, { method: 'DELETE' });
+        await carregarDados();
         mostrarToast("Histórico apagado!");
         renderSaiu();
     }

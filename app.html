@@ -13,12 +13,10 @@
         .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; overflow-y: auto; padding-bottom: 130px; }
         .screen.active { display: flex; }
 
-        /* Títulos e Botão Voltar */
         .header-title { background-color: var(--primary-red); color: var(--text-black); text-align: center; font-size: 24px; font-weight: 900; padding: 15px; text-transform: uppercase; position: relative; display: flex; align-items: center; justify-content: center; }
         .btn-back { position: absolute; top: 50%; transform: translateY(-50%); left: 15px; cursor: pointer; background: none; border: none; }
         .btn-back svg { width: 30px; height: 30px; stroke: #000; stroke-width: 3; fill: none; }
 
-        /* TELA PRINCIPAL (MY APP) */
         .main-header { background-color: var(--primary-red); padding: 15px; display: flex; flex-direction: column; position: relative; min-height: 190px; }
         .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
         .user-info { display: flex; flex-direction: column; align-items: center; width: 100px; }
@@ -31,33 +29,13 @@
         .phone-number { color: var(--primary-green); font-weight: bold; font-size: 18px; display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 15px; }
         .settings-icon { position: absolute; top: 15px; right: 15px; width: 30px; height: 30px; cursor: pointer; z-index: 10; }
 
-        /* BARRA INFERIOR */
         .bottom-nav { background-color: var(--primary-red); display: flex; justify-content: space-around; align-items: center; position: absolute; bottom: 0; left: 0; width: 100%; height: 110px; padding-top: 15px; padding-bottom: 35px; z-index: 100; }
         .nav-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; cursor: pointer; color: var(--text-black); font-size: 9px; font-weight: bold; text-transform: uppercase; width: 45px; height: 70px; padding: 0; }
         .nav-btn svg { width: 28px; height: 28px; fill: none; stroke: #fff; stroke-width: 2; margin-bottom: 6px; }
         
-        /* BOTÃO CENTRAL (+) */
-        .nav-btn.central { 
-            background-color: #fff; 
-            border-radius: 50%; 
-            width: 55px; 
-            height: 55px; 
-            flex-shrink: 0; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            padding: 0;
-        }
-        .nav-btn.central svg { 
-            stroke: var(--primary-red); 
-            stroke-width: 4; 
-            width: 32px; 
-            height: 32px; 
-            margin-bottom: 0; 
-        }
+        .nav-btn.central { background-color: #fff; border-radius: 50%; width: 55px; height: 55px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; padding: 0; }
+        .nav-btn.central svg { stroke: var(--primary-red); stroke-width: 4; width: 32px; height: 32px; margin-bottom: 0; }
 
-        /* TELA DE ESTOQUE */
         .stock-list { padding: 15px; padding-right: 50px; display: flex; flex-direction: column; gap: 15px; }
         .stock-item { background-color: #fff; border: 2px solid #000; border-radius: 10px; padding: 10px; display: flex; align-items: center; gap: 10px; position: relative; }
         .stock-img { width: 40px; height: 40px; background-color: #ccc; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 8px; text-align: center; font-weight: bold; overflow: hidden; }
@@ -76,20 +54,17 @@
 
         .btn-saiu-large { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); background-color: #ff0000; color: #fff; border: none; padding: 10px 15px; font-weight: bold; font-size: 12px; clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 25% 50%); padding-left: 20px; cursor: pointer; }
 
-        /* FORMULÁRIOS GERAIS */
         .input-field { width: 90%; padding: 12px; border: 4px solid var(--text-black); border-radius: 20px; font-size: 14px; font-weight: bold; text-align: center; outline: none; }
         .btn-submit { background-color: #00ff00; color: var(--text-black); font-weight: bold; font-size: 20px; border: 4px solid #000; border-radius: 20px; padding: 10px 30px; cursor: pointer; margin-top: 10px; }
         .create-form { display: flex; flex-direction: column; align-items: center; padding: 20px; gap: 15px; }
         .create-photo { width: 100px; height: 100px; background-color: #ccc; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; text-align: center; cursor: pointer; overflow: hidden; border: 2px solid #999; }
         .create-photo img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* LOGIN */
         .login-header { text-align: center; margin-top: 40px; margin-bottom: 30px; }
         .login-header h1 { font-size: 36px; font-weight: 900; }
         .login-header p { font-size: 12px; font-weight: bold; }
         .btn-green { background-color: #00ff00; color: var(--text-black); font-weight: 900; font-size: 24px; border: none; padding: 15px 40px; margin: 20px auto; display: block; cursor: pointer; }
 
-        /* LISTAS E CHAT */
         .list-container { padding: 15px; display: flex; flex-direction: column; gap: 10px; }
         .list-item { background-color: #fff; border: 2px solid #000; border-radius: 10px; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
         .list-item-info { font-weight: bold; font-size: 14px; flex-grow: 1; }
@@ -97,8 +72,9 @@
         .list-actions { display: flex; gap: 5px; }
         .btn-icon { border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; border-radius: 5px; padding: 5px; }
         
+        /* CHAT AJUSTADO */
         .chat-container { display: flex; flex-direction: column; padding: 15px; gap: 10px; height: calc(100vh - 200px); overflow-y: auto; }
-        .chat-bubble { max-width: 80%; padding: 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
+        .chat-bubble { max-width: 80%; padding: 10px; border-radius: 15px; font-size: 14px; font-weight: bold; word-wrap: break-word; }
         .chat-bubble.received { background-color: #ff0000; color: #fff; align-self: flex-start; border-bottom-left-radius: 0; }
         .chat-bubble.sent { background-color: #00ff00; color: #000; align-self: flex-end; border-bottom-right-radius: 0; }
         
@@ -106,7 +82,6 @@
         .chat-input-area input { flex-grow: 1; padding: 10px; border: 2px solid #000; border-radius: 20px; outline: none; }
         .chat-input-area button { background-color: #fff; border: 2px solid #000; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
 
-        /* POP-UPS (MODAL) */
         .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 500; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: #fff; width: 85%; padding: 20px; border-radius: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
@@ -117,7 +92,6 @@
         .btn-cancel { background: #ccc; color: #333; }
         .btn-confirm { background: #00ff00; color: #000; border: 2px solid #000; }
 
-        /* TOAST E LOADING */
         .toast { position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%); background-color: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; white-space: nowrap; text-align: center; }
         .toast.show { opacity: 1; }
         .toast.error { background-color: #cc0000; }
@@ -343,6 +317,9 @@
     </div>
 </div>
 
+<!-- IMPORTAÇÃO DO SOCKET.IO CLIENTE -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
 <script>
     const URL_SERVIDOR = "https://my-app-sistema.onrender.com";
 
@@ -351,6 +328,65 @@
     let listaCompras = [];
     let idProdutoTemporario = null; 
 
+    // ==========================================
+    // CONEXÃO COM O CHAT EM TEMPO REAL
+    // ==========================================
+    const socket = io(URL_SERVIDOR);
+
+    socket.on('connect', () => {
+        console.log("Conectado ao chat!");
+        carregarMensagensAntigas(); // Puxa o histórico ao conectar
+    });
+
+    socket.on('receberMensagem', (msg) => {
+        adicionarMensagemNaTela(msg);
+    });
+
+    async function carregarMensagensAntigas() {
+        try {
+            const res = await fetch(`${URL_SERVIDOR}/mensagens`);
+            const msgs = await res.json();
+            const chat = document.getElementById('chat-mensagens');
+            chat.innerHTML = ''; // Limpa antes de adicionar
+            msgs.forEach(msg => adicionarMensagemNaTela(msg));
+        } catch(erro) {
+            console.log("Erro ao carregar histórico do chat", erro);
+        }
+    }
+
+    function adicionarMensagemNaTela(msg) {
+        const chat = document.getElementById('chat-mensagens');
+        const div = document.createElement('div');
+        
+        // Se quem enviou foi o app, a bolha é verde (sent). Se foi o painel, é vermelha (received).
+        if (msg.remetente === 'app') {
+            div.className = 'chat-bubble sent';
+        } else {
+            div.className = 'chat-bubble received';
+        }
+        
+        div.innerText = msg.texto;
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight; // Rola para a última mensagem
+    }
+
+    function enviarMensagem() {
+        const input = document.getElementById('chat-input');
+        const texto = input.value;
+        
+        if (texto.trim() !== "") {
+            // Envia para o servidor
+            socket.emit('enviarMensagem', {
+                remetente: 'app',
+                texto: texto
+            });
+            input.value = ''; // Limpa o campo
+        }
+    }
+
+    // ==========================================
+    // LÓGICA DO ESTOQUE E OUTRAS FUNÇÕES
+    // ==========================================
     async function carregarDados() {
         try {
             const response = await fetch(`${URL_SERVIDOR}/produtos`);
@@ -572,11 +608,9 @@
         document.getElementById('modal-apagar').classList.add('active');
     }
     
-    // --- LÓGICA DE APAGAR COM TELA DE AGUARDE ---
     async function confirmarApagar() {
-        fecharModal('modal-apagar'); // Fecha o pop-up de confirmação
+        fecharModal('modal-apagar');
 
-        // Abre a tela de "Aguarde" com texto para apagar
         document.getElementById('loading-title').innerText = "Aguarde um momento...";
         document.getElementById('loading-text').innerText = "Seu produto está sendo apagado!";
         document.getElementById('loading-overlay').classList.add('active');
@@ -585,7 +619,6 @@
             await fetch(`${URL_SERVIDOR}/produtos/${idProdutoTemporario}`, { method: 'DELETE' });
             await carregarDados();
             
-            // Fecha a tela de aguarde e atualiza a lista
             document.getElementById('loading-overlay').classList.remove('active');
             mostrarToast("Produto apagado!");
             renderEstoque();
@@ -692,14 +725,6 @@
         listaCompras.forEach((item, index) => {
             container.innerHTML += `<div class="list-item"><div class="list-item-info">${item}</div><button class="btn-icon btn-apagar" onclick="listaCompras.splice(${index}, 1); renderListaCompras();"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div>`;
         });
-    }
-    function enviarMensagem() {
-        const input = document.getElementById('chat-input');
-        if(input.value) {
-            const chat = document.getElementById('chat-mensagens');
-            chat.innerHTML += `<div class="chat-bubble sent">${input.value}</div>`;
-            input.value = ''; chat.scrollTop = chat.scrollHeight;
-        }
     }
 </script>
 

@@ -1,19 +1,22 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const dns = require('dns');
+
+// Isso resolve o erro de DNS no Render
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// LINK CORRETO E SEM O COMANDO DE DNS QUE ESTAVA QUEBRANDO
+// Link correto com o seu cluster (alwawwa) e senha
 const stringConexao = "mongodb+srv://aguiaprodutorprodutor_db_user:lNCNmESfNUokmmx8@cluster0.alwawwa.mongodb.net/meu-sistema?retryWrites=true&w=majority";
 
 mongoose.connect(stringConexao)
   .then(() => console.log("✅ Conectado ao MongoDB Atlas com sucesso!"))
   .catch((erro) => console.log("❌ Erro ao conectar ao banco:", erro));
 
-// MODELOS
 const Produto = mongoose.model('Produto', new mongoose.Schema({
     nome: String, qtd: String, dataReg: String, dataVal: String, obs: String, status: String, foto: String
 }));
@@ -22,7 +25,6 @@ const Saida = mongoose.model('Saida', new mongoose.Schema({
     nome: String, qtd: String, data: String
 }));
 
-// ROTAS
 app.get('/', (req, res) => res.send("Servidor do My App está funcionando!"));
 
 app.get('/produtos', async (req, res) => {

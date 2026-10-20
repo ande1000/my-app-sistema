@@ -21,7 +21,7 @@
             border: 1px solid #ccc; 
         }
         
-        /* O padding-bottom aqui precisa ser maior que a altura da barra para o conteúdo não ficar escondido */
+        /* O padding garante que a lista não fique atrás da barra */
         .screen { 
             display: none; 
             width: 100%; 
@@ -31,7 +31,7 @@
             left: 0; 
             flex-direction: column; 
             overflow-y: auto; 
-            padding-bottom: 120px; /* Protege o conteúdo de ficar atrás da barra */
+            padding-bottom: 130px; 
         }
         .screen.active { display: flex; }
 
@@ -54,20 +54,20 @@
         .settings-icon { position: absolute; top: 15px; right: 15px; width: 30px; height: 30px; cursor: pointer; z-index: 10; }
 
         /* =========================================
-           AQUI ESTÁ A MÁGICA PARA O CELULAR
+           AQUI ESTÁ A CORREÇÃO DEFINITIVA
            ========================================= */
         .bottom-nav { 
             background-color: var(--primary-red); 
             display: flex; 
             justify-content: space-around; 
-            align-items: flex-start; /* Força os botões para o topo da barra */
+            align-items: flex-start; /* Alinha os botões no topo da barra */
             position: absolute; 
             bottom: 0; 
             left: 0;
             width: 100%; 
-            height: 95px; /* Altura da barra vermelha aumentada */
-            padding-top: 12px; /* Espaço entre o topo da barra e os botões */
-            padding-bottom: 15px; 
+            height: 110px; /* Barra super alta */
+            padding-top: 15px; /* Espaço no topo */
+            padding-bottom: 35px; /* ESPAÇO GRANDE EMBAIXO PARA A BARRA DO CELULAR */
             z-index: 100; 
         }
         
@@ -84,7 +84,7 @@
             font-weight: bold; 
             text-transform: uppercase; 
             width: 45px; 
-            height: 60px; 
+            height: 70px; 
             padding: 0; 
         }
         
@@ -94,24 +94,24 @@
             fill: none; 
             stroke: #fff; 
             stroke-width: 2; 
-            margin-bottom: 8px; /* Aumentei o espaço entre o ícone e o texto */
+            margin-bottom: 6px; 
         }
         
         .nav-btn.central { 
             background-color: #fff; 
             border-radius: 50%; 
-            width: 50px; 
-            height: 50px; 
+            width: 55px; 
+            height: 55px; 
             flex-shrink: 0; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.3); 
-            margin-top: -5px; /* Sobe o botão de + para alinhar com os outros */
+            margin-top: -8px; /* Sobe o + para alinhar */
         }
         
         .nav-btn.central svg { 
             stroke: var(--primary-red); 
             stroke-width: 3; 
-            width: 32px; 
-            height: 32px; 
+            width: 34px; 
+            height: 34px; 
             margin-bottom: 0; 
         }
 
@@ -160,8 +160,7 @@
         .chat-bubble.received { background-color: #ff0000; color: #fff; align-self: flex-start; border-bottom-left-radius: 0; }
         .chat-bubble.sent { background-color: #00ff00; color: #000; align-self: flex-end; border-bottom-right-radius: 0; }
         
-        /* INPUT DO CHAT SUBIU PARA NÃO BATER NA BARRA */
-        .chat-input-area { position: absolute; bottom: 105px; left: 0; width: 100%; padding: 10px; background: #fff; display: flex; gap: 10px; z-index: 99; }
+        .chat-input-area { position: absolute; bottom: 120px; left: 0; width: 100%; padding: 10px; background: #fff; display: flex; gap: 10px; z-index: 99; }
         .chat-input-area input { flex-grow: 1; padding: 10px; border: 2px solid #000; border-radius: 20px; outline: none; }
         .chat-input-area button { background-color: #fff; border: 2px solid #000; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
 
@@ -177,7 +176,7 @@
         .btn-confirm { background: #00ff00; color: #000; border: 2px solid #000; }
 
         /* TOAST */
-        .toast { position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%); background-color: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; font-weight: bold; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; white-space: nowrap; }
+        .toast { position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%); background-color: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; font-weight: bold; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; white-space: nowrap; }
         .toast.show { opacity: 1; }
     </style>
 </head>

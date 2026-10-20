@@ -3,15 +3,16 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dns = require('dns');
 
-// Força o uso do DNS do Google para evitar o erro ENOTFOUND no Render
+// Força o Render a usar o DNS do Google
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// SUA NOVA STRING DE CONEXÃO (ATUALIZADA COM OS DADOS NOVOS)
-const stringConexao = "mongodb+srv://aguiaprodutorprodutor_db_user:lNCNmESfNUokmmx8@cluster0.abcde.mongodb.net/meu-sistema?retryWrites=true&w=majority";
+// CONEXÃO DIRETA USANDO O SEU NOVO USUÁRIO E SENHA
+// SEM O "abcde" E SEM NOME DE CLUSTER ERRADO
+const stringConexao = "mongodb+srv://aguiaprodutorprodutor_db_user:lNCNmESfNUokmmx8@cluster0.mongodb.net/meu-sistema?retryWrites=true&w=majority";
 
 mongoose.connect(stringConexao)
   .then(() => console.log("✅ Conectado ao MongoDB Atlas com sucesso!"))
@@ -27,7 +28,7 @@ const Saida = mongoose.model('Saida', new mongoose.Schema({
 }));
 
 // ROTAS
-app.get('/', (req, res) => res.send("Servidor do My App está funcionando!"));
+app.get('/', (req, res) => res.send("Servidor funcionando!"));
 
 app.get('/produtos', async (req, res) => {
     try { res.json(await Produto.find()); } 

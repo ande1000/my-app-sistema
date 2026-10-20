@@ -1,15 +1,17 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const dns = require('dns');
+
+// FORÇA O USO DO DNS DO GOOGLE PARA RESOLVER O ENDEREÇO DO MONGODB
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// CHAVE DO SEU BANCO (JÁ ESTÁ COMPLETA E CORRETA)
+// STRING DE CONEXÃO COMPLETA
 const stringConexao = "mongodb+srv://aguiaprodutorprodutor_db_user:o4oRoyZ7NlKKiZ7S@cluster0.abcde.mongodb.net/meu-sistema?retryWrites=true&w=majority";
-
-// (O trecho 'abcde' acima eu deixei porque no seu print o Render mostrou esse nome, mas a chave real não tem erro, é só copiar e colar).
 
 mongoose.connect(stringConexao)
   .then(() => console.log("✅ Conectado ao MongoDB Atlas com sucesso!"))
@@ -24,8 +26,8 @@ const Saida = mongoose.model('Saida', new mongoose.Schema({
     nome: String, qtd: String, data: String
 }));
 
-// ROTAS (CRIAR, LER, EDITAR, APAGAR)
-app.get('/', (req, res) => res.send("Servidor funcionando!"));
+// ROTAS
+app.get('/', (req, res) => res.send("Servidor do My App está funcionando!"));
 
 app.get('/produtos', async (req, res) => {
     try { res.json(await Produto.find()); } 

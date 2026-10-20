@@ -12,7 +12,7 @@ app.use(express.json({ limit: '50mb' }));
 
 // CONEXÃO DIRETA USANDO O SEU NOVO USUÁRIO E SENHA
 // SEM O "abcde" E SEM NOME DE CLUSTER ERRADO
-const stringConexao = "mongodb+srv://aguiaprodutorprodutor_db_user:lNCNmESfNUokmmx8@cluster0.mongodb.net/meu-sistema?retryWrites=true&w=majority";
+const stringConexao = "mongodb+srv://aguiaprodutorprodutor_db_user:<db_o4oRoyZ7NlKKiZ7S>@cluster0.alwawwa.mongodb.net/";
 
 mongoose.connect(stringConexao)
   .then(() => console.log("✅ Conectado ao MongoDB Atlas com sucesso!"))

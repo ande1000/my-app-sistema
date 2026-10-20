@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My App - Estoque</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
+        :root { --primary-red: #ff0000; --primary-green: #00cc00; --bg-beige: #fcf7d4; --text-black: #000; }
+
+        body { background-color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        .app-container { width: 100%; max-width: 400px; height: 100vh; max-height: 800px; background-color: var(--bg-beige); position: relative; overflow: hidden; border: 1px solid #ccc; }
+        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; overflow-y: auto; padding-bottom: 85px; }
+        .screen.active { display: flex; }
+
+        /* Títulos e Botão Voltar */
+        .header-title { background-color: var(--primary-red); color: var(--text-black); text-align: center; font-size: 24px; font-weight: 900; padding: 15px; text-transform: uppercase; position: relative; display: flex; align-items: center; justify-content: center; }
+        .btn-back { position: absolute; top: 50%; transform: translateY(-50%); left: 15px; cursor: pointer; background: none; border: none; }
+        .btn-back svg { width: 30px; height: 30px; stroke: #000; stroke-width: 3; fill: none; }
+
+        /* TELA PRINCIPAL (MY APP) */
+        .main-header { background-color: var(--primary-red); padding: 15px; display: flex; flex-direction: column; position: relative; min-height: 190px; }
+        .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .user-info { display: flex; flex-direction: column; align-items: center; width: 100px; }
+        .user-photo { width: 100px; height: 100px; background-color: #fff; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; border: 1px solid #000; overflow: hidden; }
+        .user-photo img { width: 100%; height: 100%; object-fit: cover; }
+        .user-name-label { color: var(--text-black); font-weight: bold; margin-top: 5px; text-align: center; font-size: 14px; }
+        .app-title { text-align: right; flex-grow: 1; display: flex; flex-direction: column; align-items: flex-end; margin-top: 5px; padding-right: 35px; }
+        .app-title h1 { font-size: 45px; color: var(--text-black); font-weight: 900; line-height: 1; }
+        .app-title p { font-size: 10px; color: var(--primary-green); font-weight: bold; margin-bottom: 10px; }
+        .phone-number { color: var(--primary-green); font-weight: bold; font-size: 18px; display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 15px; }
+        .settings-icon { position: absolute; top: 15px; right: 15px; width: 30px; height: 30px; cursor: pointer; z-index: 10; }
+
+        /* BARRA INFERIOR */
+        .bottom-nav { background-color: var(--primary-red); display: flex; justify-content: space-around; align-items: center; position: absolute; bottom: 0; width: 100%; height: 75px; z-index: 100; }
+        .nav-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: var(--text-black); font-size: 9px; font-weight: bold; text-transform: uppercase; width: 45px; height: 60px; padding: 0; }
+        .nav-btn svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 2; margin-bottom: 4px; }
+        .nav-btn.central { background-color: #fff; border-radius: 50%; width: 50px; height: 50px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .nav-btn.central svg { stroke: var(--primary-red); stroke-width: 3; width: 32px; height: 32px; margin-bottom: 0; }
+
+        /* TELA DE ESTOQUE */
+        .stock-list { padding: 15px; padding-right: 50px; display: flex; flex-direction: column; gap: 15px; }
+        .stock-item { background-color: #fff; border: 2px solid #000; border-radius: 10px; padding: 10px; display: flex; align-items: center; gap: 10px; position: relative; }
+        .stock-img { width: 40px; height: 40px; background-color: #ccc; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 8px; text-align: center; font-weight: bold; overflow: hidden; }
+        .stock-img img { width: 100%; height: 100%; object-fit: cover; }
+        .stock-details { flex-grow: 1; }
+        .stock-name { font-weight: bold; font-size: 15px; }
+        .stock-dates { font-size: 10px; color: #555; }
+        .stock-actions { display: flex; gap: 3px; flex-wrap: wrap; }
+        .action-btn { padding: 4px 6px; border-radius: 15px; font-size: 9px; font-weight: bold; border: none; color: #fff; cursor: pointer; }
+        
+        .btn-repor { background-color: #00ff00; color: #000; }
+        .btn-acabou { background-color: #ff0000; }
+        .btn-acabou.marcado { background-color: #990000; border: 2px solid #000; } /* Fica escuro quando acabou */
+        .btn-obs { background-color: #ffcc00; color: #000; }
+        .btn-apagar { background-color: #00ffff; color: #000; }
+
+        .btn-saiu-large { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); background-color: #ff0000; color: #fff; border: none; padding: 10px 15px; font-weight: bold; font-size: 12px; clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 25% 50%); padding-left: 20px; cursor: pointer; }
+
+        /* FORMULÁRIOS GERAIS */
+        .input-field { width: 90%; padding: 12px; border: 4px solid var(--text-black); border-radius: 20px; font-size: 14px; font-weight: bold; text-align: center; outline: none; }
+        .btn-submit { background-color: #00ff00; color: var(--text-black); font-weight: bold; font-size: 20px; border: 4px solid #000; border-radius: 20px; padding: 10px 30px; cursor: pointer; margin-top: 10px; }
+        .create-form { display: flex; flex-direction: column; align-items: center; padding: 20px; gap: 15px; }
+        .create-photo { width: 100px; height: 100px; background-color: #ccc; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; text-align: center; cursor: pointer; overflow: hidden; border: 2px solid #999; }
+        .create-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* LOGIN */
+        .login-header { text-align: center; margin-top: 40px; margin-bottom: 30px; }
+        .login-header h1 { font-size: 36px; font-weight: 900; }
+        .login-header p { font-size: 12px; font-weight: bold; }
+        .btn-green { background-color: #00ff00; color: var(--text-black); font-weight: 900; font-size: 24px; border: none; padding: 15px 40px; margin: 20px auto; display: block; cursor: pointer; }
+
+        /* LISTAS E CHAT */
+        .list-container { padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .list-item { background-color: #fff; border: 2px solid #000; border-radius: 10px; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .list-item-info { font-weight: bold; font-size: 14px; flex-grow: 1; }
+        .list-item-info span { display: block; font-weight: normal; font-size: 11px; color: #555; margin-top: 3px; }
+        .list-actions { display: flex; gap: 5px; }
+        .btn-icon { border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; border-radius: 5px; padding: 5px; }
+        
+        .chat-container { display: flex; flex-direction: column; padding: 15px; gap: 10px; height: calc(100vh - 150px); overflow-y: auto; }
+        .chat-bubble { max-width: 80%; padding: 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
+        .chat-bubble.received { background-color: #ff0000; color: #fff; align-self: flex-start; border-bottom-left-radius: 0; }
+        .chat-bubble.sent { background-color: #00ff00; color: #000; align-self: flex-end; border-bottom-right-radius: 0; }
+        .chat-input-area { position: absolute; bottom: 85px; left: 0; width: 100%; padding: 10px; background: #fff; display: flex; gap: 10px; }
+        .chat-input-area input { flex-grow: 1; padding: 10px; border: 2px solid #000; border-radius: 20px; outline: none; }
+        .chat-input-area button { background-color: #fff; border: 2px solid #000; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+
+        /* POP-UPS (MODAL) */
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 500; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #fff; width: 85%; padding: 20px; border-radius: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .modal-content h2 { font-size: 22px; font-weight: 900; margin-bottom: 15px; }
+        .modal-content p { font-size: 14px; margin-bottom: 15px; color: #555; }
+        .modal-buttons { display: flex; justify-content: space-around; margin-top: 20px; }
+        .modal-buttons button { padding: 10px 20px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; }
+        .btn-cancel { background: #ccc; color: #333; }
+        .btn-confirm { background: #00ff00; color: #000; border: 2px solid #000; }
+
+        /* TOAST */
+        .toast { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); background-color: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; font-weight: bold; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; white-space: nowrap; }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <!-- TELA 1: LOGIN -->
+    <div id="tela-login" class="screen active">
+        <div class="login-header">
+            <h1>LOGGIN</h1>
+            <p>cria uma conta ou entra com uma sua</p>
+        </div>
+        <div style="padding: 0 20px;">
+            <input type="email" id="email" class="input-field" placeholder="digite seu gmail" style="margin-bottom: 15px;">
+            <input type="password" id="senha" class="input-field" placeholder="DIGITE SUA SENHA">
+        </div>
+        <button class="btn-green" onclick="irParaVerificacao()">CRIAR</button>
+    </div>
+
+    <!-- TELA 2: VERIFICAÇÃO -->
+    <div id="tela-verificacao" class="screen">
+        <div class="login-header">
+            <h1>VERIFICAÇÃO</h1>
+            <p>Insira o código de 4 dígitos</p>
+        </div>
+        <div style="padding: 0 20px;">
+            <input type="text" id="codigo" class="input-field" placeholder="0000" maxlength="4" style="font-size: 24px; letter-spacing: 5px;">
+        </div>
+        <button class="btn-green" onclick="irParaCriacaoUsuario()">CONCLUIR</button>
+    </div>
+
+    <!-- TELA 3: CRIAÇÃO DE USUÁRIO -->
+    <div id="tela-criacao" class="screen">
+        <div class="login-header">
+            <h1>CRIAR USUÁRIO</h1>
+            <p>Defina seu nome e foto</p>
+        </div>
+        <div style="display: flex; justify-content: center; margin-top: 20px; margin-bottom: 20px;">
+            <div class="create-photo" id="photo-preview-user" onclick="document.getElementById('foto-input-user').click()">
+                FOTO<br>DE<br>PERFIL
+            </div>
+            <input type="file" id="foto-input-user" accept="image/*" style="display: none;" onchange="previewImage(event, 'photo-preview-user')">
+        </div>
+        <div style="padding: 0 20px;">
+            <input type="text" id="nome-usuario" class="input-field" placeholder="Nome de usuário">
+        </div>
+        <button class="btn-green" onclick="finalizarCriacao()">CRIAR USUÁRIO</button>
+    </div>
+
+    <!-- TELA 4: PRINCIPAL -->
+    <div id="tela-principal" class="screen">
+        <div class="main-header">
+            <div class="settings-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </div>
+            <div class="header-top">
+                <div class="user-info">
+                    <div class="user-photo" id="main-photo"></div>
+                    <div class="user-name-label" id="main-user-name">nome do usuário</div>
+                </div>
+                <div class="app-title">
+                    <p>cria seus estoques com mais inteligência</p>
+                    <h1>My App</h1>
+                </div>
+            </div>
+            <div class="phone-number">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00cc00" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                77 991130508
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA 5: ESTOQUE -->
+    <div id="tela-estoque" class="screen">
+        <div class="header-title">
+            <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
+            SEU ESTOQUE
+        </div>
+        <div class="stock-list" id="lista-estoque"></div>
+    </div>
+
+    <!-- TELA 6: CRIAR PRODUTO -->
+    <div id="tela-criar-produto" class="screen">
+        <div class="header-title">
+            <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
+            CRIAR PRODUTO
+        </div>
+        <div class="create-form">
+            <div class="create-photo" id="photo-preview-product" onclick="document.getElementById('foto-input-product').click()">
+                FOTO<br>DO<br>PRODUTO
+            </div>
+            <input type="file" id="foto-input-product" accept="image/*" style="display: none;" onchange="previewImage(event, 'photo-preview-product')">
+            <input type="text" id="prod-nome" class="input-field" placeholder="nome do produto">
+            <input type="text" id="prod-qtd" class="input-field" placeholder="quantidade">
+            <input type="date" id="prod-reg" class="input-field" placeholder="data de registro">
+            <input type="date" id="prod-val" class="input-field" placeholder="data de validade">
+            <input type="text" id="prod-obs" class="input-field" placeholder="obs">
+            <button class="btn-submit" onclick="criarProduto()">CRIAR</button>
+        </div>
+    </div>
+
+    <!-- TELA 7: SAIR (POP-UP) -->
+    <div id="tela-sair" class="screen" style="background: rgba(0,0,0,0.5);">
+        <div style="background: #fff; margin: auto; width: 90%; padding: 20px; border-radius: 20px; text-align: center;">
+            <h1 style="font-size: 30px; font-weight: 900; margin-bottom: 20px;">SAIU</h1>
+            <input type="text" id="sair-nome" class="input-field" placeholder="NOME DO PRODUTO" style="margin-bottom: 10px;" readonly>
+            <input type="text" id="sair-qtd" class="input-field" placeholder="QUANTIDADE" style="margin-bottom: 10px;">
+            <input type="date" id="sair-data" class="input-field" style="margin-bottom: 20px;">
+            <button onclick="confirmarSaida()" style="background: red; border: none; cursor: pointer; margin: 0 auto; display: block;">
+                <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- TELA 8: ACABOU -->
+    <div id="tela-acabou" class="screen">
+        <div class="header-title">
+            <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
+            ITENS ACABADOS
+        </div>
+        <div class="list-container" id="lista-acabou"></div>
+    </div>
+
+    <!-- TELA 9: OBS -->
+    <div id="tela-obs" class="screen">
+        <div class="header-title">
+            <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
+            OBSERVAÇÕES
+        </div>
+        <div class="list-container" id="lista-obs"></div>
+    </div>
+
+    <!-- TELA 10: CÂMERA -->
+    <div id="tela-camera" class="screen">
+        <div class="header-title">
+            <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
+            CÂMERA
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60%; text-align: center;">
+            <div style="width: 200px; height: 150px; background: #000; border-radius: 10px; display: flex; justify-content: center; align-items: center; color: #fff;">QuaggaJS Area</div>
+        </div>
+    </div>
+
+    <!-- TELA 11: SAÍU HISTÓRICO -->
+    <div id="tela-saiu-hist" class="screen">
+        <div class="header-title">
+            <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
+            ITENS QUE SAÍRAM
+        </div>
+        <div class="list-container" id="lista-saiu"></div>
+    </div>
+
+    <!-- TELA 12: LISTA DE COMPRAS -->
+    <div id="tela-lista" class="screen">
+        <div class="header-title">
+            <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
+            LISTA DE COMPRAS
+        </div>
+        <div style="padding: 15px;">
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="text" id="compras-nome" class="input-field" placeholder="Nome do produto" style="flex-grow:1;">
+                <button onclick="adicionarCompra()" style="background: #00ff00; border: 2px solid #000; border-radius: 10px; padding: 0 15px; font-weight: bold; cursor: pointer;">ADD</button>
+            </div>
+            <div class="list-container" id="lista-compras" style="padding: 0;"></div>
+        </div>
+    </div>
+
+    <!-- TELA 13: CHAT -->
+    <div id="tela-chat" class="screen" style="padding-bottom: 130px;">
+        <div class="header-title">
+            <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
+            MY APP CHAT
+        </div>
+        <div class="chat-container" id="chat-mensagens">
+            <div class="chat-bubble received">Olá, suporte!</div>
+            <div class="chat-bubble sent">Em que posso ajudar?</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Digite uma mensagem...">
+            <button onclick="enviarMensagem()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00cc00" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></button>
+        </div>
+    </div>
+
+    <!-- MODAIS (POP-UPS) -->
+    <!-- Modal Repor -->
+    <div class="modal-overlay" id="modal-repor">
+        <div class="modal-content">
+            <h2>REPOR ESTOQUE</h2>
+            <p id="repor-nome-prod"></p>
+            <input type="number" id="repor-qtd" class="input-field" placeholder="Quantidade a adicionar" style="margin-bottom: 10px;">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="fecharModal('modal-repor')">Cancelar</button>
+                <button class="btn-confirm" onclick="confirmarRepor()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal OBS -->
+    <div class="modal-overlay" id="modal-obs">
+        <div class="modal-content">
+            <h2>OBSERVAÇÃO</h2>
+            <p id="obs-nome-prod"></p>
+            <textarea id="obs-texto" class="input-field" placeholder="Digite sua observação..." style="height: 80px; resize: none;"></textarea>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="fecharModal('modal-obs')">Cancelar</button>
+                <button class="btn-confirm" onclick="confirmarObs()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Apagar -->
+    <div class="modal-overlay" id="modal-apagar">
+        <div class="modal-content">
+            <h2>APAGAR PRODUTO</h2>
+            <p>Tem certeza que deseja apagar este produto?</p>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="fecharModal('modal-apagar')">Cancelar</button>
+                <button class="btn-confirm" style="background: #ff0000; color: #fff;" onclick="confirmarApagar()">Apagar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRA INFERIOR GLOBAL -->
+    <div class="bottom-nav" id="bottom-nav-bar" style="display: none;">
+        <button class="nav-btn" onclick="abrirTela('tela-estoque')"><svg viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>estoques</button>
+        <button class="nav-btn" onclick="abrirTela('tela-acabou')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>acabou</button>
+        <button class="nav-btn" onclick="abrirTela('tela-obs')"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>obs</button>
+        <button class="nav-btn" onclick="abrirTela('tela-camera')"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>câmera</button>
+        <button class="nav-btn central" onclick="abrirTela('tela-criar-produto')"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+        <button class="nav-btn" onclick="abrirTela('tela-saiu-hist')"><svg viewBox="0 0 24 24"><path d="M10 3H6a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h4"></path><polyline points="17 8 22 12 17 16"></polyline><line x1="22" y1="12" x2="9" y2="12"></line></svg>saiu</button>
+        <button class="nav-btn" onclick="abrirTela('tela-lista')"><svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><line x1="9" y1="12" x2="15" y2="12"></line><line x1="9" y1="16" x2="15" y2="16"></line></svg>lista</button>
+        <button class="nav-btn" onclick="abrirTela('tela-chat')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>chat</button>
+    </div>
+
+    <div id="toast" class="toast">Ação salva!</div>
+</div>
+
+<script>
+    let produtos = [
+        { id: 1, nome: "Óleo de Soja", qtd: "2", dataReg: "2026-11-09", dataVal: "2026-11-12", obs: "Só tem 2", foto: null, status: "ok" },
+        { id: 2, nome: "Feijão", qtd: "1", dataReg: "2026-10-22", dataVal: "2026-12-27", obs: "", foto: null, status: "ok" }
+    ];
+    let itensSairam = [];
+    let listaCompras = [];
+    let idProdutoTemporario = null; // Para os modais
+
+    function abrirTela(telaId) {
+        document.querySelectorAll('.screen').forEach(t => t.classList.remove('active'));
+        document.getElementById(telaId).classList.add('active');
+
+        const barraInferior = document.getElementById('bottom-nav-bar');
+        if (['tela-login', 'tela-verificacao', 'tela-criacao'].includes(telaId)) {
+            barraInferior.style.display = 'none';
+        } else {
+            barraInferior.style.display = 'flex';
+        }
+
+        if (telaId === 'tela-estoque') renderEstoque();
+        if (telaId === 'tela-acabou') renderAcabou();
+        if (telaId === 'tela-obs') renderObs();
+        if (telaId === 'tela-saiu-hist') renderSaiu();
+        if (telaId === 'tela-lista') renderListaCompras();
+    }
+
+    function mostrarToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // --- AUTENTICAÇÃO ---
+    function irParaVerificacao() { if(document.getElementById('email').value) abrirTela('tela-verificacao'); }
+    function irParaCriacaoUsuario() { if(document.getElementById('codigo').value.length === 4) abrirTela('tela-criacao'); }
+    function previewImage(event, previewId) {
+        const reader = new FileReader();
+        reader.onload = function(){
+            document.getElementById(previewId).innerHTML = `<img src="${reader.result}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+            if(previewId === 'photo-preview-user') window.fotoUsuario = reader.result;
+            if(previewId === 'photo-preview-product') window.fotoProduto = reader.result;
+        };
+        if(event.target.files[0]) reader.readAsDataURL(event.target.files[0]);
+    }
+    function finalizarCriacao() {
+        if(document.getElementById('nome-usuario').value) {
+            document.getElementById('main-user-name').innerText = document.getElementById('nome-usuario').value;
+            if(window.fotoUsuario) document.getElementById('main-photo').innerHTML = `<img src="${window.fotoUsuario}">`;
+            abrirTela('tela-principal');
+        }
+    }
+
+    // --- PRODUTOS ---
+    function criarProduto() {
+        const nome = document.getElementById('prod-nome').value;
+        const qtd = document.getElementById('prod-qtd').value;
+        if(!nome || !qtd) { mostrarToast("Preencha nome e quantidade!"); return; }
+
+        produtos.push({
+            id: Date.now(), nome, qtd,
+            dataReg: document.getElementById('prod-reg').value,
+            dataVal: document.getElementById('prod-val').value,
+            obs: document.getElementById('prod-obs').value,
+            foto: window.fotoProduto || null,
+            status: "ok"
+        });
+        
+        document.getElementById('prod-nome').value = '';
+        document.getElementById('prod-qtd').value = '';
+        document.getElementById('photo-preview-product').innerHTML = 'FOTO<br>DO<br>PRODUTO';
+        window.fotoProduto = null;
+        abrirTela('tela-estoque');
+        mostrarToast("Produto criado!");
+    }
+
+    function renderEstoque() {
+        const container = document.getElementById('lista-estoque');
+        container.innerHTML = '';
+        
+        produtos.forEach(prod => {
+            const div = document.createElement('div');
+            div.className = 'stock-item';
+            let imgHtml = prod.foto ? `<img src="${prod.foto}">` : 'FOTO';
+            
+            // Se o status for acabou, deixa o botão vermelho mais escuro
+            let classeAcabou = prod.status === 'acabou' ? 'marcado' : '';
+
+            div.innerHTML = `
+                <div class="stock-img">${imgHtml}</div>
+                <div class="stock-details">
+                    <div class="stock-name">${prod.nome}</div>
+                    <div class="stock-dates">qtd: ${prod.qtd}<br>reg: ${prod.dataReg || '--'}<br>val: ${prod.dataVal || '--'}</div>
+                </div>
+                <div class="stock-actions">
+                    <button class="action-btn btn-repor" onclick="abrirModalRepor(${prod.id}, '${prod.nome}')">REPOR</button>
+                    <button class="action-btn btn-acabou ${classeAcabou}" onclick="marcarAcabou(${prod.id})">acabou</button>
+                    <button class="action-btn btn-obs" onclick="abrirModalObs(${prod.id}, '${prod.nome}', '${prod.obs}')">observação</button>
+                    <button class="action-btn btn-apagar" onclick="abrirModalApagar(${prod.id})">apaga</button>
+                </div>
+                <button class="btn-saiu-large" onclick="abrirPopUpSair('${prod.nome}')">SAIU</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function marcarAcabou(id) {
+        const prod = produtos.find(p => p.id === id);
+        if(prod) {
+            prod.status = prod.status === 'acabou' ? 'ok' : 'acabou';
+            mostrarToast(prod.status === 'acabou' ? "Item marcado como ACABOU" : "Item reposto!");
+            renderEstoque();
+        }
+    }
+
+    // --- LÓGICA DOS MODAIS (POP-UPS) ---
+    function fecharModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    // Pop-up Repor
+    function abrirModalRepor(id, nome) {
+        idProdutoTemporario = id;
+        document.getElementById('repor-nome-prod').innerText = `Produto: ${nome}`;
+        document.getElementById('repor-qtd').value = '';
+        document.getElementById('modal-repor').classList.add('active');
+    }
+    function confirmarRepor() {
+        const qtdAdicionar = parseInt(document.getElementById('repor-qtd').value);
+        if(!qtdAdicionar || qtdAdicionar <= 0) { mostrarToast("Digite uma quantidade válida."); return; }
+        
+        const prod = produtos.find(p => p.id === idProdutoTemporario);
+        if(prod) {
+            prod.qtd = (parseInt(prod.qtd) || 0) + qtdAdicionar;
+            prod.status = 'ok'; // Se estava acabado, volta ao normal
+            mostrarToast(`${qtdAdicionar} adicionado(s) ao estoque.`);
+            fecharModal('modal-repor');
+            renderEstoque();
+        }
+    }
+
+    // Pop-up OBS
+    function abrirModalObs(id, nome, obsAtual) {
+        idProdutoTemporario = id;
+        document.getElementById('obs-nome-prod').innerText = `Produto: ${nome}`;
+        document.getElementById('obs-texto').value = obsAtual !== 'undefined' ? obsAtual : '';
+        document.getElementById('modal-obs').classList.add('active');
+    }
+    function confirmarObs() {
+        const texto = document.getElementById('obs-texto').value;
+        const prod = produtos.find(p => p.id === idProdutoTemporario);
+        if(prod) {
+            prod.obs = texto;
+            mostrarToast("Observação salva!");
+            fecharModal('modal-obs');
+            renderEstoque();
+        }
+    }
+
+    // Pop-up Apagar
+    function abrirModalApagar(id) {
+        idProdutoTemporario = id;
+        document.getElementById('modal-apagar').classList.add('active');
+    }
+    function confirmarApagar() {
+        produtos = produtos.filter(p => p.id !== idProdutoTemporario);
+        mostrarToast("Produto apagado!");
+        fecharModal('modal-apagar');
+        renderEstoque();
+    }
+
+    // --- TELA ACABOU ---
+    function renderAcabou() {
+        const container = document.getElementById('lista-acabou');
+        container.innerHTML = '';
+        const acabados = produtos.filter(p => p.status === 'acabou');
+        if(acabados.length === 0) container.innerHTML = '<p style="text-align:center; font-weight:bold; margin-top:20px;">Nenhum item acabado.</p>';
+
+        acabados.forEach(prod => {
+            container.innerHTML += `
+                <div class="list-item">
+                    <div class="list-item-info">${prod.nome}<span>Qtd atual: ${prod.qtd}</span></div>
+                    <button class="action-btn btn-repor" onclick="abrirModalRepor(${prod.id}, '${prod.nome}')">REPOR</button>
+                </div>
+            `;
+        });
+    }
+
+    // --- TELA OBS ---
+    function renderObs() {
+        const container = document.getElementById('lista-obs');
+        container.innerHTML = '';
+        const comObs = produtos.filter(p => p.obs && p.obs.trim() !== '');
+        if(comObs.length === 0) container.innerHTML = '<p style="text-align:center; font-weight:bold; margin-top:20px;">Nenhuma observação.</p>';
+
+        comObs.forEach(prod => {
+            container.innerHTML += `
+                <div class="list-item">
+                    <div class="list-item-info">${prod.nome}<span>OBS: ${prod.obs}</span></div>
+                    <button class="action-btn btn-apagar" onclick="abrirModalApagar(${prod.id})">Apagar</button>
+                </div>
+            `;
+        });
+    }
+
+    // --- SAÍDA E HISTÓRICO ---
+    function abrirPopUpSair(nomeProd) {
+        document.getElementById('sair-nome').value = nomeProd;
+        document.getElementById('sair-qtd').value = '';
+        document.getElementById('sair-data').value = new Date().toISOString().split('T')[0];
+        abrirTela('tela-sair');
+    }
+
+    function confirmarSaida() {
+        const nome = document.getElementById('sair-nome').value;
+        const qtd = document.getElementById('sair-qtd').value;
+        const data = document.getElementById('sair-data').value;
+        if(!qtd) { mostrarToast("Digite a quantidade que saiu!"); return; }
+
+        itensSairam.push({ id: Date.now(), nome, qtd, data });
+        mostrarToast("Saída registrada!");
+        abrirTela('tela-saiu-hist');
+    }
+
+    function renderSaiu() {
+        const container = document.getElementById('lista-saiu');
+        container.innerHTML = '';
+        if(itensSairam.length === 0) container.innerHTML = '<p style="text-align:center; font-weight:bold; margin-top:20px;">Nenhum item saiu.</p>';
+
+        itensSairam.forEach(item => {
+            container.innerHTML += `
+                <div class="list-item">
+                    <div class="list-item-info">${item.nome}<span>Qtd: ${item.qtd} | Data: ${item.data}</span></div>
+                    <div class="list-actions">
+                        <button class="btn-icon" style="background: #800080;" onclick="alert('Função de editar em breve!')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
+                        <button class="btn-icon btn-apagar" onclick="apagarSaida(${item.id})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function apagarSaida(id) {
+        itensSairam = itensSairam.filter(item => item.id !== id);
+        mostrarToast("Histórico apagado!");
+        renderSaiu();
+    }
+
+    // --- LISTA E CHAT ---
+    function adicionarCompra() {
+        const nome = document.getElementById('compras-nome').value;
+        if(nome) { listaCompras.push(nome); document.getElementById('compras-nome').value = ''; renderListaCompras(); }
+    }
+    function renderListaCompras() {
+        const container = document.getElementById('lista-compras');
+        container.innerHTML = '';
+        listaCompras.forEach((item, index) => {
+            container.innerHTML += `<div class="list-item"><div class="list-item-info">${item}</div><button class="btn-icon btn-apagar" onclick="listaCompras.splice(${index}, 1); renderListaCompras();"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div>`;
+        });
+    }
+    function enviarMensagem() {
+        const input = document.getElementById('chat-input');
+        if(input.value) {
+            const chat = document.getElementById('chat-mensagens');
+            chat.innerHTML += `<div class="chat-bubble sent">${input.value}</div>`;
+            input.value = ''; chat.scrollTop = chat.scrollHeight;
+        }
+    }
+</script>
+
+</body>
+</html>

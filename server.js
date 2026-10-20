@@ -10,8 +10,8 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Link correto com o seu cluster (alwawwa) e senha
-const stringConexao = "mongodb+srv://aguiaprodutorprodutor_db_user:lNCNmESfNUokmmx8@cluster0.alwawwa.mongodb.net/meu-sistema?retryWrites=true&w=majority";
+// Link com o cluster correto (alwawwa) e a SUA SENHA VERDADEIRA
+const stringConexao = "mongodb+srv://aguiaprodutorprodutor_db_user:o4oRoyZ7NlKKiZ7S@cluster0.alwawwa.mongodb.net/meu-sistema?retryWrites=true&w=majority";
 
 mongoose.connect(stringConexao)
   .then(() => console.log("✅ Conectado ao MongoDB Atlas com sucesso!"))

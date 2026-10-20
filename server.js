@@ -66,10 +66,20 @@ const Usuario = mongoose.model('Usuario', new mongoose.Schema({
     nome: String, foto: String, ultimoAcesso: { type: Date, default: Date.now }
 }));
 
+// Mostra nos logs cada requisição que chega (ajuda a diagnosticar)
+app.use((req, res, next) => { console.log("➡️", req.method, req.url); next(); });
+
 // Helper para não repetir try/catch em toda rota
 const rota = (fn) => async (req, res) => {
-    try { await fn(req, res); }
-    catch (erro) { console.log("Erro na rota", req.method, req.path, "->", erro.message); res.status(500).json({ erro: erro.message }); }
+    try {
+        await Promise.race([
+            fn(req, res),
+            new Promise((_, rej) => setTimeout(() => rej(new Error("O banco de dados não respondeu a tempo (20s)")), 20000))
+        ]);
+    } catch (erro) {
+        console.log("❌ Erro na rota", req.method, req.path, "->", erro.message);
+        if (!res.headersSent) res.status(500).json({ erro: erro.message });
+    }
 };
 
 // =====================================================
@@ -77,10 +87,18 @@ const rota = (fn) => async (req, res) => {
 // =====================================================
 app.get('/', (req, res) => res.send("Servidor funcionando!"));
 
-// Diagnóstico: abra /status no navegador para ver se o banco está conectado
-app.get('/status', (req, res) => {
+// Diagnóstico: abra /status no navegador
+app.get('/status', async (req, res) => {
     const estados = ['desconectado', 'conectado', 'conectando', 'desconectando'];
-    res.json({ servidor: 'ok', banco: estados[mongoose.connection.readyState] || 'desconhecido' });
+    let ping = 'sem resposta';
+    try {
+        await Promise.race([
+            mongoose.connection.db.admin().ping(),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
+        ]);
+        ping = 'ok';
+    } catch (e) { ping = 'sem resposta (' + e.message + ')'; }
+    res.json({ servidor: 'ok', banco: estados[mongoose.connection.readyState] || 'desconhecido', pingBanco: ping });
 });
 
 // PRODUTOS

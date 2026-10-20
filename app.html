@@ -209,7 +209,7 @@
             <input type="text" id="sair-qtd" class="input-field" placeholder="QUANTIDADE" style="margin-bottom: 10px;">
             <input type="date" id="sair-data" class="input-field" style="margin-bottom: 20px;">
             <button onclick="confirmarSaida()" style="background: red; border: none; cursor: pointer; margin: 0 auto; display: block;">
-                <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg>
             </button>
         </div>
     </div>
@@ -338,6 +338,11 @@
 </div>
 
 <script>
+    // ==========================================
+    // CONEXÃO COM O SERVIDOR NO RENDER
+    // ==========================================
+    const URL_SERVIDOR = "https://my-app-sistema.onrender.com";
+
     let produtos = [
         { id: 1, nome: "Óleo de Soja", qtd: "2", dataReg: "2026-11-09", dataVal: "2026-11-12", obs: "Só tem 2", foto: null, status: "ok" },
         { id: 2, nome: "Feijão", qtd: "1", dataReg: "2026-10-22", dataVal: "2026-12-27", obs: "", foto: null, status: "ok" }

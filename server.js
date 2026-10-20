@@ -11,7 +11,7 @@ app.use(express.json({ limit: '50mb' }));
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
 
-const stringConexao = "mongodb+srv://aguiaprodutorprodutor_db_user:o4oRoyZ7NlKKiZ7S@cluster0.alwawwa.mongodb.net/meu-sistema?retryWrites=true&w=majority";
+const stringConexao = "mongodb+srv://aguiaprodutorprodutor_db_user:lNCNmESfNUokmmx8@cluster0.alwawwa.mongodb.net/meu-sistema?retryWrites=true&w=majority";
 
 mongoose.connect(stringConexao)
   .then(() => console.log("✅ Conectado ao MongoDB Atlas com sucesso!"))
@@ -30,34 +30,31 @@ const Mensagem = mongoose.model('Mensagem', new mongoose.Schema({
 const ListaCompras = mongoose.model('ListaCompras', new mongoose.Schema({
     item: String, obs: String
 }));
-
-// NOVO MODELO: USUÁRIO (Para aparecer no painel)
 const Usuario = mongoose.model('Usuario', new mongoose.Schema({
     nome: String, foto: String, ultimoAcesso: { type: Date, default: Date.now }
 }));
 
-// ROTAS
-app.get('/', (req, res) => res.send("Servidor funcionando!"));
-
+// ROTAS DE PRODUTOS
 app.get('/produtos', async (req, res) => { try { res.json(await Produto.find()); } catch (erro) { res.status(500).json({ erro: erro.message }); } });
 app.post('/produtos', async (req, res) => { try { const novo = new Produto(req.body); await novo.save(); res.json(novo); } catch (erro) { res.status(500).json({ erro: erro.message }); } });
 app.put('/produtos/:id', async (req, res) => { try { await Produto.findByIdAndUpdate(req.params.id, req.body); res.json({ mensagem: "Atualizado!" }); } catch (erro) { res.status(500).json({ erro: erro.message }); } });
 app.delete('/produtos/:id', async (req, res) => { try { await Produto.findByIdAndDelete(req.params.id); res.json({ mensagem: "Apagado!" }); } catch (erro) { res.status(500).json({ erro: erro.message }); } });
 
+// ROTAS DE SAÍDAS
 app.get('/saidas', async (req, res) => { try { res.json(await Saida.find()); } catch (erro) { res.status(500).json({ erro: erro.message }); } });
 app.post('/saidas', async (req, res) => { try { const nova = new Saida(req.body); await nova.save(); res.json(nova); } catch (erro) { res.status(500).json({ erro: erro.message }); } });
 app.delete('/saidas/:id', async (req, res) => { try { await Saida.findByIdAndDelete(req.params.id); res.json({ mensagem: "Apagado!" }); } catch (erro) { res.status(500).json({ erro: erro.message }); } });
 
+// ROTAS DE MENSAGENS E LISTA
 app.get('/mensagens', async (req, res) => { try { res.json(await Mensagem.find().sort({ dataHora: 1 })); } catch (erro) { res.status(500).json({ erro: erro.message }); } });
 
 app.get('/lista', async (req, res) => { try { res.json(await ListaCompras.find()); } catch (erro) { res.status(500).json({ erro: erro.message }); } });
 app.post('/lista', async (req, res) => { try { const novo = new ListaCompras(req.body); await novo.save(); res.json(novo); } catch (erro) { res.status(500).json({ erro: erro.message }); } });
 app.delete('/lista/:id', async (req, res) => { try { await ListaCompras.findByIdAndDelete(req.params.id); res.json({ mensagem: "Apagado!" }); } catch (erro) { res.status(500).json({ erro: erro.message }); } });
 
-// ROTAS DO USUÁRIO
+// ROTAS DE USUÁRIOS
 app.get('/usuarios', async (req, res) => { 
     try { 
-        // Pega os usuários que acessaram nos últimos 5 minutos
         const cincoMinAtras = new Date(Date.now() - 5 * 60000);
         res.json(await Usuario.find({ ultimoAcesso: { $gte: cincoMinAtras } })); 
     } catch (erro) { res.status(500).json({ erro: erro.message }); } 
@@ -65,7 +62,6 @@ app.get('/usuarios', async (req, res) => {
 
 app.post('/usuarios', async (req, res) => { 
     try { 
-        // Se já existir, atualiza a foto e o último acesso
         const usuario = await Usuario.findOneAndUpdate(
             { nome: req.body.nome }, 
             { foto: req.body.foto, ultimoAcesso: Date.now() },
@@ -73,6 +69,16 @@ app.post('/usuarios', async (req, res) => {
         );
         res.json(usuario); 
     } catch (erro) { res.status(500).json({ erro: erro.message }); } 
+});
+
+// ROTA PARA APAGAR USUÁRIO (A NOVA FUNÇÃO AQUI)
+app.delete('/usuarios/:id', async (req, res) => {
+    try {
+        await Usuario.findByIdAndDelete(req.params.id);
+        res.json({ mensagem: "Usuário apagado com sucesso!" });
+    } catch (erro) {
+        res.status(500).json({ erro: erro.message });
+    }
 });
 
 // CHAT SOCKET

@@ -10,7 +10,7 @@
         body { background-color: var(--bg-gray); display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
         .desktop-container { width: 100%; height: 100vh; background-color: #fff; display: flex; flex-direction: column; position: relative; }
         
-        /* TOPO (HEADER) */
+        /* TOPO */
         .top-header { background-color: var(--header-purple); height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: relative; z-index: 10; }
         .user-profile-header { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 14px; color: #000; }
         .app-logo { position: absolute; left: 50%; transform: translateX(-50%); font-size: 36px; font-weight: 900; color: #000; letter-spacing: 2px; }
@@ -201,9 +201,7 @@
             <div id="aba-chat" class="content-screen">
                 <div class="content-title">My App Chat</div>
                 <div class="chat-area">
-                    <div class="chat-messages" id="chat-painel-mensagens">
-                        <!-- Vazio, aguardando mensagens reais -->
-                    </div>
+                    <div class="chat-messages" id="chat-painel-mensagens"></div>
                     <div class="chat-input-panel">
                         <input type="text" id="chat-painel-input" placeholder="Digite sua resposta...">
                         <button onclick="enviarMsgPainel()">Enviar</button>
@@ -235,13 +233,28 @@
 <script>
     const URL_SERVIDOR = "https://my-app-sistema.onrender.com";
     
-    // Arrays vazios para receber os dados reais do banco
     let dadosEstoque = [];
     let dadosSairam = [];
     let dadosListaCompras = [];
     let idParaApagar = null;
+    
+    let abaAtual = 'estoque'; // Guarda qual aba está aberta
 
-    // BUSCAR DADOS REAIS DO SERVIDOR
+    // ==========================================
+    // RELÓGIO AUTOMÁTICO (ATUALIZA A CADA 3 SEG)
+    // ==========================================
+    setInterval(async () => {
+        await carregarDadosPainel();
+        
+        // Se a aba atual for estoque, ele atualiza a lista na tela
+        if (abaAtual === 'estoque') renderEstoquePainel();
+        if (abaAtual === 'obs') renderObsPainel();
+        if (abaAtual === 'saiu') renderSaiuPainel();
+        if (abaAtual === 'acabou') renderAcabouPainel();
+        // O cálculo e lista de compras não atualizam automaticamente para não atrapalhar a leitura.
+        
+    }, 3000);
+
     async function carregarDadosPainel() {
         try {
             const resProdutos = await fetch(`${URL_SERVIDOR}/produtos`);
@@ -249,14 +262,13 @@
             
             const resSaidas = await fetch(`${URL_SERVIDOR}/saidas`);
             dadosSairam = await resSaidas.json();
-            
-            // Se a lista de compras for implementada no back-end futuramente, ela entraria aqui.
         } catch (erro) {
             console.error("Erro ao buscar dados:", erro);
         }
     }
 
     function abrirAba(aba, btnElement) {
+        abaAtual = aba; // Atualiza a variável para o relógio saber o que renderizar
         document.querySelectorAll('.content-screen').forEach(t => t.classList.remove('active'));
         document.getElementById(`aba-${aba}`).classList.add('active');
 
@@ -267,16 +279,20 @@
 
         if (aba === 'chat') document.getElementById('chat-badge').style.display = 'none';
 
-        // Chama a renderização correspondente
-        if (aba === 'estoque') renderEstoquePainel();
-        if (aba === 'obs') renderObsPainel();
-        if (aba === 'saiu') renderSaiuPainel();
-        if (aba === 'acabou') renderAcabouPainel();
-        if (aba === 'lista_compras') renderListaPainel();
+        // Força um carregamento imediato ao clicar na aba
+        carregarDadosPainel().then(() => {
+            if (aba === 'estoque') renderEstoquePainel();
+            if (aba === 'obs') renderObsPainel();
+            if (aba === 'saiu') renderSaiuPainel();
+            if (aba === 'acabou') renderAcabouPainel();
+            if (aba === 'lista_compras') renderListaPainel();
+        });
     }
 
     function renderEstoquePainel() {
         const container = document.getElementById('painel-estoque');
+        if(!container) return;
+        
         container.innerHTML = '';
         if (dadosEstoque.length === 0) container.innerHTML = '<p>Nenhum produto no estoque.</p>';
         
@@ -287,7 +303,7 @@
                     <div class="card-info">
                         <h4>${prod.nome}</h4>
                         <p>Qtd: ${prod.qtd}</p>
-                        <p>Validade: ${prod.dataVal}</p>
+                        <p>Validade: ${prod.dataVal || '--'}</p>
                     </div>
                 </div>
             `;
@@ -296,6 +312,8 @@
 
     function renderObsPainel() {
         const container = document.getElementById('painel-obs');
+        if(!container) return;
+        
         container.innerHTML = '';
         const comObs = dadosEstoque.filter(p => p.obs && p.obs.trim() !== '');
         if (comObs.length === 0) container.innerHTML = '<p>Nenhuma observação.</p>';
@@ -315,6 +333,8 @@
 
     function renderSaiuPainel() {
         const container = document.getElementById('tabela-saiu');
+        if(!container) return;
+        
         container.innerHTML = '';
         if (dadosSairam.length === 0) container.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum item saiu.</td></tr>';
 
@@ -336,6 +356,8 @@
 
     function renderAcabouPainel() {
         const container = document.getElementById('painel-acabou');
+        if(!container) return;
+        
         container.innerHTML = '';
         const acabados = dadosEstoque.filter(p => p.status === 'acabou');
         if (acabados.length === 0) container.innerHTML = '<p>Nenhum item acabado.</p>';
@@ -355,6 +377,8 @@
 
     function renderListaPainel() {
         const container = document.getElementById('painel-lista');
+        if(!container) return;
+        
         container.innerHTML = '';
         if (dadosListaCompras.length === 0) container.innerHTML = '<p>Nenhuma lista recebida.</p>';
 
@@ -448,7 +472,7 @@
         setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
-    // Inicializa buscando os dados reais
+    // Inicializa o painel
     carregarDadosPainel().then(() => {
         renderEstoquePainel();
     });

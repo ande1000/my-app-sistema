@@ -11,8 +11,7 @@
         body { background-color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
         .app-container { width: 100%; max-width: 400px; height: 100vh; max-height: 800px; background-color: var(--bg-beige); position: relative; overflow: hidden; border: 1px solid #ccc; }
         
-        /* AQUI FOI A CORREÇÃO PRINCIPAL: Aumentei o padding-bottom de 85px para 110px */
-        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; overflow-y: auto; padding-bottom: 110px; }
+        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; overflow-y: auto; padding-bottom: 120px; }
         .screen.active { display: flex; }
 
         /* Títulos e Botão Voltar */
@@ -33,8 +32,22 @@
         .phone-number { color: var(--primary-green); font-weight: bold; font-size: 18px; display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 15px; }
         .settings-icon { position: absolute; top: 15px; right: 15px; width: 30px; height: 30px; cursor: pointer; z-index: 10; }
 
-        /* BARRA INFERIOR */
-        .bottom-nav { background-color: var(--primary-red); display: flex; justify-content: space-around; align-items: center; position: absolute; bottom: 0; width: 100%; height: 75px; z-index: 100; }
+        /* =========================================
+           BARRA INFERIOR CORRIGIDA PARA CELULAR
+           ========================================= */
+        .bottom-nav { 
+            background-color: var(--primary-red); 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: flex-start; /* Alinha no topo da barra */
+            position: absolute; 
+            bottom: 0; 
+            width: 100%; 
+            height: 85px; /* Barra mais alta */
+            padding-top: 10px; /* Espaço no topo */
+            padding-bottom: 15px; /* ESPAÇO EMBAIXO PARA A BARRA DO CELULAR */
+            z-index: 100; 
+        }
         .nav-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: var(--text-black); font-size: 9px; font-weight: bold; text-transform: uppercase; width: 45px; height: 60px; padding: 0; }
         .nav-btn svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 2; margin-bottom: 4px; }
         .nav-btn.central { background-color: #fff; border-radius: 50%; width: 50px; height: 50px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
@@ -80,13 +93,13 @@
         .list-actions { display: flex; gap: 5px; }
         .btn-icon { border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; border-radius: 5px; padding: 5px; }
         
-        .chat-container { display: flex; flex-direction: column; padding: 15px; gap: 10px; height: calc(100vh - 150px); overflow-y: auto; }
+        .chat-container { display: flex; flex-direction: column; padding: 15px; gap: 10px; height: calc(100vh - 180px); overflow-y: auto; }
         .chat-bubble { max-width: 80%; padding: 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
         .chat-bubble.received { background-color: #ff0000; color: #fff; align-self: flex-start; border-bottom-left-radius: 0; }
         .chat-bubble.sent { background-color: #00ff00; color: #000; align-self: flex-end; border-bottom-right-radius: 0; }
         
-        /* AQUI TAMBÉM: O input do chat subiu para não ficar atrás dos botões */
-        .chat-input-area { position: absolute; bottom: 95px; left: 0; width: 100%; padding: 10px; background: #fff; display: flex; gap: 10px; z-index: 99; }
+        /* INPUT DO CHAT SUBIU AINDA MAIS PARA NÃO ENCOSTAR NOS BOTÕES */
+        .chat-input-area { position: absolute; bottom: 105px; left: 0; width: 100%; padding: 10px; background: #fff; display: flex; gap: 10px; z-index: 99; }
         .chat-input-area input { flex-grow: 1; padding: 10px; border: 2px solid #000; border-radius: 20px; outline: none; }
         .chat-input-area button { background-color: #fff; border: 2px solid #000; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
 
@@ -102,7 +115,7 @@
         .btn-confirm { background: #00ff00; color: #000; border: 2px solid #000; }
 
         /* TOAST */
-        .toast { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); background-color: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; font-weight: bold; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; white-space: nowrap; }
+        .toast { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background-color: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; font-weight: bold; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; white-space: nowrap; }
         .toast.show { opacity: 1; }
     </style>
 </head>
@@ -331,7 +344,6 @@
     let listaCompras = [];
     let idProdutoTemporario = null; 
 
-    // Carrega os produtos do banco de dados
     async function carregarDados() {
         try {
             const response = await fetch(`${URL_SERVIDOR}/produtos`);
@@ -369,7 +381,6 @@
         setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    // --- AUTENTICAÇÃO ---
     function irParaVerificacao() { if(document.getElementById('email').value) abrirTela('tela-verificacao'); }
     function irParaCriacaoUsuario() { if(document.getElementById('codigo').value.length === 4) abrirTela('tela-criacao'); }
     
@@ -388,11 +399,10 @@
             document.getElementById('main-user-name').innerText = document.getElementById('nome-usuario').value;
             if(window.fotoUsuario) document.getElementById('main-photo').innerHTML = `<img src="${window.fotoUsuario}">`;
             abrirTela('tela-principal');
-            carregarDados(); // Só busca os dados após o login
+            carregarDados();
         }
     }
 
-    // --- PRODUTOS ---
     async function criarProduto() {
         const nome = document.getElementById('prod-nome').value;
         const qtd = document.getElementById('prod-qtd').value;

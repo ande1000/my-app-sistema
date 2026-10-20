@@ -112,6 +112,7 @@
         .op-repor { background: #00ff00; }
         .op-acabou { background: #ff6666; }
         .op-obs { background: #ffcc00; }
+        .op-editar { background: #cc99ff; }
         .op-apagar { background: #00ffff; }
         .btn-saiu-large { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); background-color: #ff0000; color: #fff; border: none; padding: 10px 15px; font-weight: bold; font-size: 12px; clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 25% 50%); padding-left: 20px; cursor: pointer; }
 
@@ -244,7 +245,7 @@
     <div id="tela-criar-produto" class="screen">
         <div class="header-title">
             <button class="btn-back" onclick="abrirTela('tela-principal')"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
-            CRIAR PRODUTO
+            <span id="titulo-form-produto">CRIAR PRODUTO</span>
         </div>
         <div class="create-form">
             <div class="photo-container">
@@ -263,7 +264,7 @@
             <input type="date" id="prod-reg" class="input-field" placeholder="data de registro">
             <input type="date" id="prod-val" class="input-field" placeholder="data de validade">
             <input type="text" id="prod-obs" class="input-field" placeholder="obs">
-            <button class="btn-submit" onclick="criarProduto()">CRIAR</button>
+            <button class="btn-submit" id="btn-salvar-produto" onclick="criarProduto()">CRIAR</button>
         </div>
     </div>
 
@@ -338,6 +339,7 @@
                 <button class="menu-op op-repor" onclick="menuProd('repor')">REPOR</button>
                 <button class="menu-op op-acabou" id="menu-op-acabou" onclick="menuProd('acabou')">ACABOU</button>
                 <button class="menu-op op-obs" onclick="menuProd('obs')">OBSERVAÇÃO</button>
+                <button class="menu-op op-editar" onclick="menuProd('editar')">EDITAR</button>
                 <button class="menu-op op-apagar" onclick="menuProd('apagar')">APAGAR</button>
             </div>
             <div class="modal-buttons">
@@ -388,7 +390,7 @@
         
         <button class="nav-btn" onclick="abrirTela('tela-obs')"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>obs</button>
         
-        <button class="nav-btn central" onclick="abrirTela('tela-criar-produto')"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+        <button class="nav-btn central" onclick="novoProduto()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
         
         <button class="nav-btn" onclick="abrirTela('tela-saiu-hist')"><svg viewBox="0 0 24 24"><path d="M10 3H6a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h4"></path><polyline points="17 8 22 12 17 16"></polyline><line x1="22" y1="12" x2="9" y2="12"></line></svg>saiu</button>
         
@@ -484,6 +486,9 @@
             barraInferior.style.display = 'flex';
         }
 
+        if (telaId === 'tela-criar-produto') prepararFormProduto();
+        else idProdutoEditando = null;
+
         if (telaId === 'tela-estoque') renderEstoque();
         if (telaId === 'tela-acabou') renderAcabou();
         if (telaId === 'tela-obs') renderObs();
@@ -532,13 +537,52 @@
         }
     }
 
+    // ===== CRIAR / EDITAR PRODUTO (mesma tela) =====
+    let idProdutoEditando = null;
+
+    function limparFormProduto() {
+        ['prod-nome', 'prod-qtd', 'prod-reg', 'prod-val', 'prod-obs'].forEach(i => document.getElementById(i).value = '');
+        document.getElementById('photo-preview-product').innerHTML = 'FOTO<br>DO<br>PRODUTO';
+        window.fotoProduto = null;
+    }
+
+    function prepararFormProduto() {
+        const editando = !!idProdutoEditando;
+        document.getElementById('titulo-form-produto').innerText = editando ? 'EDITAR PRODUTO' : 'CRIAR PRODUTO';
+        document.getElementById('btn-salvar-produto').innerText = editando ? 'SALVAR' : 'CRIAR';
+        if (!editando) limparFormProduto();
+    }
+
+    function novoProduto() {
+        idProdutoEditando = null;
+        abrirTela('tela-criar-produto');
+    }
+
+    function editarProduto(id) {
+        const prod = produtos.find(p => p._id === id);
+        if (!prod) return;
+        idProdutoEditando = id;
+        abrirTela('tela-criar-produto');
+
+        document.getElementById('prod-nome').value = prod.nome || '';
+        document.getElementById('prod-qtd').value = prod.qtd || '';
+        document.getElementById('prod-reg').value = prod.dataReg || '';
+        document.getElementById('prod-val').value = prod.dataVal || '';
+        document.getElementById('prod-obs').value = prod.obs || '';
+        window.fotoProduto = prod.foto || null;
+        document.getElementById('photo-preview-product').innerHTML = prod.foto
+            ? `<img src="${prod.foto}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`
+            : 'FOTO<br>DO<br>PRODUTO';
+    }
+
     async function criarProduto() {
         const nome = document.getElementById('prod-nome').value;
         const qtd = document.getElementById('prod-qtd').value;
         if(!nome || !qtd) { mostrarToast("Preencha nome e quantidade!"); return; }
 
+        const editando = !!idProdutoEditando;
         document.getElementById('loading-title').innerText = "Aguarde um momento...";
-        document.getElementById('loading-text').innerText = "Seu produto está sendo criado!";
+        document.getElementById('loading-text').innerText = editando ? "Salvando as alterações!" : "Seu produto está sendo criado!";
         document.getElementById('loading-overlay').classList.add('active');
 
         const novoProduto = {
@@ -546,34 +590,32 @@
             dataReg: document.getElementById('prod-reg').value,
             dataVal: document.getElementById('prod-val').value,
             obs: document.getElementById('prod-obs').value,
-            foto: window.fotoProduto || null,
-            status: "ok"
+            foto: window.fotoProduto || null
         };
+        if (!editando) novoProduto.status = "ok"; // ao editar, mantém o status atual
 
         try {
-            const response = await fetch(`${URL_SERVIDOR}/produtos`, {
-                method: 'POST',
+            const response = await fetch(editando ? `${URL_SERVIDOR}/produtos/${idProdutoEditando}` : `${URL_SERVIDOR}/produtos`, {
+                method: editando ? 'PUT' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(novoProduto)
             });
 
             if(response.ok) {
                 await carregarDados();
-                document.getElementById('prod-nome').value = '';
-                document.getElementById('prod-qtd').value = '';
-                document.getElementById('photo-preview-product').innerHTML = 'FOTO<br>DO<br>PRODUTO';
-                window.fotoProduto = null;
+                limparFormProduto();
+                idProdutoEditando = null;
                 
                 document.getElementById('loading-overlay').classList.remove('active');
                 abrirTela('tela-estoque');
-                mostrarToast("Produto criado com sucesso!");
+                mostrarToast(editando ? "Produto atualizado!" : "Produto criado com sucesso!");
             } else {
                 document.getElementById('loading-overlay').classList.remove('active');
-                mostrarToast("O servidor recusou a criação.", true);
+                mostrarToast(editando ? "O servidor recusou a alteração." : "O servidor recusou a criação.", true);
             }
         } catch(erro) {
             document.getElementById('loading-overlay').classList.remove('active');
-            mostrarToast("Erro de conexão ao criar produto.", true);
+            mostrarToast(idProdutoEditando ? "Erro de conexão ao salvar alterações." : "Erro de conexão ao criar produto.", true);
         }
     }
 
@@ -645,6 +687,7 @@
         else if (acao === 'repor') abrirModalRepor(prod._id, prod.nome);
         else if (acao === 'acabou') marcarAcabou(prod._id);
         else if (acao === 'obs') abrirModalObs(prod._id, prod.nome, String(prod.obs || ''));
+        else if (acao === 'editar') editarProduto(prod._id);
         else if (acao === 'apagar') abrirModalApagar(prod._id);
     }
 

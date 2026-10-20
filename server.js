@@ -34,7 +34,7 @@ const Usuario = mongoose.model('Usuario', new mongoose.Schema({
     nome: String, foto: String, ultimoAcesso: { type: Date, default: Date.now }
 }));
 
-// ROTAS DE PRODUTOS
+// ================= PRODUTOS =================
 app.get('/produtos', async (req, res) => { 
     try { res.json(await Produto.find()); } catch (erro) { res.status(500).json({ erro: erro.message }); } 
 });
@@ -48,7 +48,7 @@ app.delete('/produtos/:id', async (req, res) => {
     try { await Produto.findByIdAndDelete(req.params.id); res.json({ mensagem: "Apagado!" }); } catch (erro) { res.status(500).json({ erro: erro.message }); } 
 });
 
-// ROTAS DE SAÍDAS
+// ================= SAÍDAS =================
 app.get('/saidas', async (req, res) => { 
     try { res.json(await Saida.find()); } catch (erro) { res.status(500).json({ erro: erro.message }); } 
 });
@@ -59,7 +59,7 @@ app.delete('/saidas/:id', async (req, res) => {
     try { await Saida.findByIdAndDelete(req.params.id); res.json({ mensagem: "Apagado!" }); } catch (erro) { res.status(500).json({ erro: erro.message }); } 
 });
 
-// ROTAS DE MENSAGENS E LISTA DE COMPRAS
+// ================= MENSAGENS E LISTA =================
 app.get('/mensagens', async (req, res) => { 
     try { res.json(await Mensagem.find().sort({ dataHora: 1 })); } catch (erro) { res.status(500).json({ erro: erro.message }); } 
 });
@@ -73,7 +73,7 @@ app.delete('/lista/:id', async (req, res) => {
     try { await ListaCompras.findByIdAndDelete(req.params.id); res.json({ mensagem: "Apagado!" }); } catch (erro) { res.status(500).json({ erro: erro.message }); } 
 });
 
-// ROTAS DE USUÁRIOS
+// ================= USUÁRIOS =================
 app.get('/usuarios', async (req, res) => { 
     try { 
         const cincoMinAtras = new Date(Date.now() - 5 * 60000);
@@ -99,7 +99,7 @@ app.delete('/usuarios/:id', async (req, res) => {
     }
 });
 
-// CHAT SOCKET
+// ================= CHAT =================
 io.on('connection', (socket) => {
     socket.on('enviarMensagem', async (dados) => {
         try {

@@ -102,6 +102,11 @@
         .btn-obs { background-color: #ffcc00; color: #000; }
         .btn-apagar { background-color: #00ffff; color: #000; }
 
+        .unid-wrap { display: flex; justify-content: center; gap: 14px; margin-bottom: 14px; }
+        .unid-item { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; background: none; border: none; padding: 0; }
+        .unid-caixa { width: 70px; height: 36px; border: 3px solid #000; border-radius: 18px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; color: #000; }
+        .unid-item.sel .unid-caixa { background: #00ff00; }
+        .unid-nome { font-size: 15px; font-weight: bold; color: #000; }
         .btn-config { width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; background-color: #000; border: none; display: flex; justify-content: center; align-items: center; cursor: pointer; }
         .btn-config svg { width: 24px; height: 24px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .stock-aviso { display: inline-block; margin-top: 4px; background: #990000; color: #fff; font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 10px; }
@@ -268,7 +273,13 @@
             <h1 style="font-size: 30px; font-weight: 900; margin-bottom: 20px;">SAIU</h1>
             <input type="text" id="sair-nome" class="input-field" placeholder="NOME DO PRODUTO" style="margin-bottom: 10px;" readonly>
             <input type="text" inputmode="decimal" id="sair-qtd" class="input-field" placeholder="QUANTIDADE" style="margin-bottom: 10px;">
-            <input type="date" id="sair-data" class="input-field" style="margin-bottom: 20px;">
+            <input type="date" id="sair-data" class="input-field" style="margin-bottom: 14px;">
+            <div class="unid-wrap">
+                <button type="button" class="unid-item" id="unid-quilo" onclick="escolherUnidade('quilo')"><span class="unid-caixa"></span><span class="unid-nome">quilo</span></button>
+                <button type="button" class="unid-item" id="unid-unidade" onclick="escolherUnidade('unidade')"><span class="unid-caixa"></span><span class="unid-nome">unidade</span></button>
+                <button type="button" class="unid-item" id="unid-pacote" onclick="escolherUnidade('pacote')"><span class="unid-caixa"></span><span class="unid-nome">pacote</span></button>
+            </div>
+            <input type="text" id="sair-obs" class="input-field" placeholder="observação" maxlength="80" style="margin-bottom: 20px; width: 75%; font-size: 14px;">
             <button onclick="confirmarSaida()" style="background: red; border: none; cursor: pointer; margin: 0 auto; display: block;">
                 <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg>
             </button>
@@ -1119,8 +1130,22 @@
         return virgula ? t.replace('.', ',') : t;
     }
 
+    let unidadeSaida = null;
+
+    // Só uma opção por vez: quilo, unidade ou pacote (tocar de novo desmarca)
+    function escolherUnidade(tipo) {
+        unidadeSaida = (unidadeSaida === tipo) ? null : tipo;
+        ['quilo', 'unidade', 'pacote'].forEach(t => {
+            const item = document.getElementById('unid-' + t);
+            item.classList.toggle('sel', unidadeSaida === t);
+            item.querySelector('.unid-caixa').innerText = (unidadeSaida === t) ? '✓' : '';
+        });
+    }
+
     function abrirPopUpSair(nomeProd, idProd) {
         idProdutoSaida = idProd || null;
+        unidadeSaida = 'x'; escolherUnidade('x'); // limpa a escolha anterior
+        document.getElementById('sair-obs').value = '';
         document.getElementById('sair-nome').value = nomeProd;
         document.getElementById('sair-qtd').value = '';
         document.getElementById('sair-data').value = new Date().toISOString().split('T')[0];
@@ -1135,6 +1160,7 @@
 
         const saiu = lerQuantidade(qtdTxt);
         if (!saiu || saiu.n <= 0) { mostrarToast("Digite um número maior que zero!", true); return; }
+        if (!unidadeSaida || unidadeSaida === 'x') { mostrarToast("Marque: quilo, unidade ou pacote!", true); return; }
 
         // descobre quanto sobra no estoque
         const prod = produtos.find(p => p._id === idProdutoSaida) || produtos.find(p => p.nome === nome);
@@ -1157,7 +1183,7 @@
             const r1 = await fetch(`${URL_SERVIDOR}/saidas`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome: nome, qtd: formatarQuantidade(saiu.n, saiu.virgula), data: data })
+                body: JSON.stringify({ nome: nome, qtd: formatarQuantidade(saiu.n, saiu.virgula), data: data, unidade: unidadeSaida, obs: document.getElementById('sair-obs').value.trim() })
             });
             if (!r1.ok) throw new Error('saida');
 
@@ -1188,7 +1214,7 @@
         itensSairam.forEach(item => {
             container.innerHTML += `
                 <div class="list-item">
-                    <div class="list-item-info">${item.nome}<span>Qtd: ${item.qtd} | Data: ${item.data}</span></div>
+                    <div class="list-item-info">${item.nome}<span>Qtd: ${item.qtd}${item.unidade ? ' ' + item.unidade : ''} | Data: ${item.data}${item.obs ? '<br>Obs: ' + item.obs : ''}</span></div>
                     <div class="list-actions">
                         <button class="btn-icon btn-apagar" onclick="apagarSaida('${item._id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                     </div>

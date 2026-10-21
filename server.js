@@ -55,7 +55,7 @@ const Produto = mongoose.model('Produto', new mongoose.Schema({
     nome: String, qtd: String, dataReg: String, dataVal: String, obs: String, status: String, foto: String, fotoVersao: Number
 }));
 const Saida = mongoose.model('Saida', new mongoose.Schema({
-    nome: String, qtd: String, data: String
+    nome: String, qtd: String, data: String, unidade: String, obs: String
 }));
 const Mensagem = mongoose.model('Mensagem', new mongoose.Schema({
     remetente: String, texto: String, dataHora: { type: Date, default: Date.now }

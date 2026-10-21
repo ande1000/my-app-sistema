@@ -114,6 +114,12 @@ app.delete('/saidas/:id', rota(async (req, res) => { await Saida.findByIdAndDele
 
 // MENSAGENS
 app.get('/mensagens', rota(async (req, res) => res.json(await Mensagem.find().sort({ dataHora: 1 }))));
+// Apaga todo o histórico do chat e avisa o app e o painel em tempo real
+app.delete('/mensagens', rota(async (req, res) => {
+    await Mensagem.deleteMany({});
+    io.emit('historicoLimpo');
+    res.json({ mensagem: "Histórico apagado!" });
+}));
 
 // LISTA DE COMPRAS
 app.get('/lista', rota(async (req, res) => res.json(await ListaCompras.find())));

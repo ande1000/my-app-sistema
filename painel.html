@@ -505,38 +505,50 @@
         }
     }
 
-    setInterval(async () => {
-        await carregarDadosPainel();
-        if (abaAtual === 'estoque') renderEstoquePainel();
-        if (abaAtual === 'obs') renderObsPainel();
-        if (abaAtual === 'saiu') renderSaiuPainel();
-        if (abaAtual === 'acabou') renderAcabouPainel();
-        if (abaAtual === 'lista_compras') renderListaPainel();
-        if (abaAtual === 'usuarios') renderUsuariosPainel();
-    }, 3000);
+    // Só faz uma nova consulta quando a anterior terminou (antes, as consultas se acumulavam)
+    let consultando = false;
+    async function cicloDeAtualizacao() {
+        if (consultando) return;
+        consultando = true;
+        try {
+            await carregarDadosPainel();
+            if (abaAtual === 'estoque') renderEstoquePainel();
+            if (abaAtual === 'obs') renderObsPainel();
+            if (abaAtual === 'saiu') renderSaiuPainel();
+            if (abaAtual === 'acabou') renderAcabouPainel();
+            if (abaAtual === 'lista_compras') renderListaPainel();
+            if (abaAtual === 'usuarios') renderUsuariosPainel();
+        } finally {
+            consultando = false;
+        }
+    }
+    setInterval(cicloDeAtualizacao, 5000);
+
+    async function pegarLista(url) {
+        try {
+            const r = await fetch(url);
+            const j = await r.json();
+            return Array.isArray(j) ? j : null;
+        } catch (erro) {
+            return null;
+        }
+    }
 
     async function carregarDadosPainel() {
-        try {
-            const resProdutos = await fetch(`${URL_SERVIDOR}/produtos`);
-            const listaProdutos = await resProdutos.json();
-            if (Array.isArray(listaProdutos)) {
-                dadosEstoque = listaProdutos;
-                detectarNovidadesProdutos(listaProdutos);
-            }
-            
-            const resSaidas = await fetch(`${URL_SERVIDOR}/saidas`);
-            const listaSaidas = await resSaidas.json();
-            if (Array.isArray(listaSaidas)) dadosSairam = listaSaidas;
-
-            const resLista = await fetch(`${URL_SERVIDOR}/lista`);
-            dadosListaCompras = await resLista.json();
-
-            const resUsuarios = await fetch(`${URL_SERVIDOR}/usuarios`);
-            dadosUsuarios = await resUsuarios.json();
-
-        } catch (erro) {
-            console.error("Erro ao buscar dados:", erro);
+        // as consultas rodam juntas; a lista de usuários só é pedida quando a aba "usuários" está aberta
+        const [listaProdutos, listaSaidas, listaCompras, listaUsuarios] = await Promise.all([
+            pegarLista(`${URL_SERVIDOR}/produtos`),
+            pegarLista(`${URL_SERVIDOR}/saidas`),
+            pegarLista(`${URL_SERVIDOR}/lista`),
+            abaAtual === 'usuarios' ? pegarLista(`${URL_SERVIDOR}/usuarios`) : Promise.resolve(null)
+        ]);
+        if (listaProdutos) {
+            dadosEstoque = listaProdutos;
+            detectarNovidadesProdutos(listaProdutos);
         }
+        if (listaSaidas) dadosSairam = listaSaidas;
+        if (listaCompras) dadosListaCompras = listaCompras;
+        if (listaUsuarios) dadosUsuarios = listaUsuarios;
     }
 
     function abrirAba(aba, btnElement) {

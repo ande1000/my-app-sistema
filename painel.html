@@ -80,6 +80,18 @@
         .notification-text h4 { font-size: 14px; margin-bottom: 2px; }
         .notification-text p { font-size: 12px; color: #555; }
 
+        /* NOTIFICAÇÕES PEQUENAS (estilo WhatsApp) */
+        #notif-container { position: fixed; top: 80px; right: 15px; display: flex; flex-direction: column; gap: 8px; z-index: 2000; pointer-events: none; }
+        .notif-item { display: flex; align-items: center; gap: 10px; background: #fff; border-left: 5px solid #25d366; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.3); padding: 10px 14px; width: 270px; max-width: calc(100vw - 30px); opacity: 0; transform: translateX(120%); transition: transform 0.35s ease, opacity 0.35s ease; pointer-events: auto; }
+        .notif-item.show { opacity: 1; transform: translateX(0); }
+        .notif-item.acabou { border-left-color: #ff0000; }
+        .notif-item.msg { border-left-color: #0a84ff; }
+        .notif-icone { font-size: 22px; flex-shrink: 0; }
+        .notif-corpo { min-width: 0; }
+        .notif-titulo { font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase; letter-spacing: 0.3px; }
+        .notif-texto { font-size: 14px; font-weight: bold; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #aviso-som { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; font-size: 12px; padding: 6px 14px; border-radius: 20px; z-index: 3000; display: none; }
+
         /* MODAL */
         .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 2000; }
         .modal-overlay.active { display: flex; }
@@ -213,6 +225,9 @@
         </div>
     </div>
 
+    <div id="notif-container"></div>
+    <div id="aviso-som">🔇 Clique em qualquer lugar da tela para ativar o som das notificações</div>
+
     <div class="notification-toast" id="notif-toast">
         <div class="notification-icon">🔔</div>
         <div class="notification-text">
@@ -254,6 +269,107 @@
     let idParaApagar = null;
     let abaAtual = 'estoque';
 
+    // =====================================================
+    // NOTIFICAÇÕES (pop-up pequeno + som tocando 2 vezes)
+    // =====================================================
+    let audioCtx = null;
+    let ultimoSom = 0;
+    let snapshotProdutos = null; // guarda como estavam os produtos na última checagem
+
+    function prepararAudio() {
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (audioCtx.state === 'running') document.getElementById('aviso-som').style.display = 'none';
+        } catch (e) {}
+    }
+    // O navegador só libera o som depois de um clique/toque na página
+    ['click', 'touchstart', 'keydown'].forEach(ev => document.addEventListener(ev, prepararAudio));
+    setTimeout(() => {
+        if (!audioCtx || audioCtx.state !== 'running') document.getElementById('aviso-som').style.display = 'block';
+    }, 1500);
+
+    function tocarNota(freq, inicio, duracao) {
+        const osc = audioCtx.createOscillator();
+        const ganho = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        ganho.gain.setValueAtTime(0.0001, inicio);
+        ganho.gain.exponentialRampToValueAtTime(0.4, inicio + 0.02);
+        ganho.gain.exponentialRampToValueAtTime(0.0001, inicio + duracao);
+        osc.connect(ganho);
+        ganho.connect(audioCtx.destination);
+        osc.start(inicio);
+        osc.stop(inicio + duracao + 0.05);
+    }
+
+    // Toca o "plim-plim" e repete mais uma vez (2 vezes no total)
+    function tocarSomNotificacao() {
+        const agora = Date.now();
+        if (agora - ultimoSom < 1500) return; // várias notificações juntas = um só som
+        ultimoSom = agora;
+        try {
+            prepararAudio();
+            if (!audioCtx || audioCtx.state !== 'running') return;
+            const t = audioCtx.currentTime + 0.05;
+            for (let i = 0; i < 2; i++) {
+                const base = t + i * 0.9;
+                tocarNota(880, base, 0.18);
+                tocarNota(1320, base + 0.16, 0.3);
+            }
+        } catch (e) {}
+    }
+
+    function notificar(titulo, texto, icone, tipo) {
+        const box = document.getElementById('notif-container');
+        const item = document.createElement('div');
+        item.className = 'notif-item ' + (tipo || '');
+
+        const ic = document.createElement('div');
+        ic.className = 'notif-icone';
+        ic.textContent = icone || '🔔';
+        const corpo = document.createElement('div');
+        corpo.className = 'notif-corpo';
+        const t = document.createElement('div');
+        t.className = 'notif-titulo';
+        t.textContent = titulo;
+        const x = document.createElement('div');
+        x.className = 'notif-texto';
+        x.textContent = texto;
+        corpo.appendChild(t);
+        corpo.appendChild(x);
+        item.appendChild(ic);
+        item.appendChild(corpo);
+        box.appendChild(item);
+
+        requestAnimationFrame(() => requestAnimationFrame(() => item.classList.add('show')));
+        tocarSomNotificacao();
+
+        // limita a 4 pop-ups na tela ao mesmo tempo
+        while (box.children.length > 4) box.removeChild(box.firstChild);
+
+        setTimeout(() => {
+            item.classList.remove('show');
+            setTimeout(() => item.remove(), 400);
+        }, 5000);
+    }
+
+    // Compara os produtos com a checagem anterior e avisa o que mudou
+    function detectarNovidadesProdutos(lista) {
+        if (!Array.isArray(lista)) return;
+        const atual = new Map(lista.map(p => [p._id, p.status]));
+        if (snapshotProdutos !== null) { // na primeira carga não avisa (itens já existentes)
+            lista.forEach(p => {
+                if (!snapshotProdutos.has(p._id)) {
+                    notificar('Novo item adicionado', p.nome, '📦', '');
+                } else if (p.status === 'acabou' && snapshotProdutos.get(p._id) !== 'acabou') {
+                    notificar('Item acabou', p.nome, '🚫', 'acabou');
+                }
+            });
+        }
+        snapshotProdutos = atual;
+    }
+
     const socket = io(URL_SERVIDOR);
 
     socket.on('connect', () => {
@@ -263,18 +379,13 @@
     socket.on('receberMensagem', (msg) => {
         adicionarMensagemNoPainel(msg);
         
-        if (msg.remetente === 'app' && abaAtual !== 'chat') {
-            const badge = document.getElementById('chat-badge');
-            badge.style.display = 'flex';
-            badge.innerText = '1';
-            
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioCtx.createOscillator();
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-            oscillator.connect(audioCtx.destination);
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.1);
+        if (msg.remetente === 'app') {
+            if (abaAtual !== 'chat') {
+                const badge = document.getElementById('chat-badge');
+                badge.style.display = 'flex';
+                badge.innerText = '1';
+            }
+            notificar('Nova mensagem', msg.texto, '💬', 'msg');
         }
     });
 
@@ -318,7 +429,11 @@
     async function carregarDadosPainel() {
         try {
             const resProdutos = await fetch(`${URL_SERVIDOR}/produtos`);
-            dadosEstoque = await resProdutos.json();
+            const listaProdutos = await resProdutos.json();
+            if (Array.isArray(listaProdutos)) {
+                dadosEstoque = listaProdutos;
+                detectarNovidadesProdutos(listaProdutos);
+            }
             
             const resSaidas = await fetch(`${URL_SERVIDOR}/saidas`);
             dadosSairam = await resSaidas.json();
@@ -515,17 +630,10 @@
     }
 
     function mostrarNotificacao() {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioCtx.createOscillator();
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-        oscillator.connect(audioCtx.destination);
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.1);
-
-        const toast = document.getElementById('notif-toast');
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 4000);
+        // Botão "notificações": ativa o som e mostra um exemplo
+        prepararAudio();
+        ultimoSom = 0;
+        notificar('Notificações ativadas', 'Você será avisado de novidades!', '🔔', '');
     }
 
     function solicitarApagar(id) {

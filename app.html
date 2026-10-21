@@ -24,11 +24,11 @@
         .user-info { display: flex; flex-direction: column; align-items: center; width: 100px; }
         .user-photo { width: 100px; height: 100px; background-color: #fff; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; border: 1px solid #000; overflow: hidden; }
         .user-photo img { width: 100%; height: 100%; object-fit: cover; }
-        .user-name-label { color: var(--text-black); font-weight: bold; margin-top: 5px; text-align: center; font-size: 14px; }
+        .user-name-label { color: var(--letras-titulo, var(--text-black)); font-weight: bold; margin-top: 5px; text-align: center; font-size: 14px; }
         .app-title { text-align: right; flex-grow: 1; display: flex; flex-direction: column; align-items: flex-end; margin-top: 5px; padding-right: 35px; }
-        .app-title h1 { font-size: 45px; color: var(--text-black); font-weight: 900; line-height: 1; }
-        .app-title p { font-size: 10px; color: var(--primary-green); font-weight: bold; margin-bottom: 10px; }
-        .phone-number { color: var(--primary-green); font-weight: bold; font-size: 18px; display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 15px; }
+        .app-title h1 { font-size: 45px; color: var(--letras-titulo, var(--text-black)); font-weight: 900; line-height: 1; }
+        .app-title p { font-size: 10px; color: var(--letras-verde, var(--primary-green)); font-weight: bold; margin-bottom: 10px; }
+        .phone-number { color: var(--letras-verde, var(--primary-green)); font-weight: bold; font-size: 18px; display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 15px; }
         .settings-icon { position: absolute; top: 15px; right: 15px; width: 30px; height: 30px; cursor: pointer; z-index: 10; }
 
         .bottom-nav { 
@@ -67,7 +67,7 @@
             width: 28px; 
             height: 28px; 
             fill: none; 
-            stroke: #fff; 
+            stroke: var(--cor-botoes, #fff); 
             stroke-width: 2; 
             margin-bottom: 6px; 
         }
@@ -158,6 +158,26 @@
         .btn-cancel { background: #ccc; color: #333; }
         .btn-confirm { background: #00ff00; color: #000; border: 2px solid #000; }
 
+        /* CONFIGURAÇÕES DO APP */
+        .config-card { background: #fff; width: 88%; max-width: 340px; max-height: 92%; overflow-y: auto; border-radius: 18px; border: 3px solid #000; box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+        .config-topo { background-color: var(--primary-red); color: #000; position: relative; display: flex; align-items: center; justify-content: center; padding: 14px 44px; font-size: 22px; font-weight: 900; text-align: center; }
+        .config-x { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+        .config-x svg { width: 26px; height: 26px; stroke: #ffeb00; stroke-width: 5; stroke-linecap: round; fill: none; }
+        .config-corpo { padding: 14px 10px 18px; text-align: center; }
+        .cfg-btn { display: block; width: 92%; margin: 0 auto 12px; padding: 10px 8px; border: 3px solid #000; border-radius: 20px; background: #fff; font-weight: 900; font-size: 15px; cursor: pointer; color: #000; }
+        .cfg-btn:active { transform: scale(0.97); }
+        .cfg-swatches { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 8px 0 14px; }
+        .cfg-swatch-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 62px; font-size: 11px; font-weight: bold; color: #000; cursor: pointer; }
+        .cfg-swatch { width: 48px; height: 48px; border-radius: 50%; border: 3px solid #000; }
+        .cfg-swatch.sel { box-shadow: 0 0 0 3px #fff, 0 0 0 6px #000; }
+        .cfg-link { background: none; border: none; text-decoration: underline; font-size: 12px; font-weight: bold; color: #555; cursor: pointer; margin-bottom: 14px; }
+        .cfg-acoes { display: flex; justify-content: center; gap: 10px; }
+        .cfg-acoes button { padding: 10px 20px; font-weight: bold; border: 2px solid #000; border-radius: 12px; cursor: pointer; font-size: 15px; }
+        .cfg-voltar { background: #ccc; color: #000; }
+        .cfg-salvar { background: #00ff00; color: #000; }
+        .cfg-input { width: 92%; padding: 12px; border: 3px solid #000; border-radius: 20px; font-size: 15px; font-weight: bold; text-align: center; outline: none; margin: 10px 0 18px; }
+        .cfg-label { font-size: 13px; color: #555; font-weight: bold; }
+
         .toast { position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%); background-color: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; white-space: nowrap; text-align: center; }
         .toast.show { opacity: 1; }
         .toast.error { background-color: #cc0000; }
@@ -214,7 +234,7 @@
 
     <div id="tela-principal" class="screen">
         <div class="main-header">
-            <div class="settings-icon">
+            <div class="settings-icon" onclick="abrirConfig()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </div>
             <div class="header-top">
@@ -224,11 +244,11 @@
                 </div>
                 <div class="app-title">
                     <p>cria seus estoques com mais inteligência</p>
-                    <h1>My App</h1>
+                    <h1 id="main-app-name">My App</h1>
                 </div>
             </div>
             <div class="phone-number">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00cc00" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                 77 991130508
             </div>
         </div>
@@ -397,6 +417,52 @@
         <button class="nav-btn" onclick="abrirTela('tela-lista')"><svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><line x1="9" y1="12" x2="15" y2="12"></line><line x1="9" y1="16" x2="15" y2="16"></line></svg>lista</button>
         
         <button class="nav-btn" onclick="abrirTela('tela-chat')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>chat</button>
+    </div>
+
+    <div class="modal-overlay" id="config-overlay">
+        <div class="config-card">
+            <div class="config-topo">
+                <button class="config-x" onclick="fecharConfig()" title="Fechar"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+                <span id="config-titulo">configuração</span>
+            </div>
+            <div class="config-corpo">
+                <div id="cfg-menu">
+                    <button class="cfg-btn" onclick="abrirCores('fundo')">cor do fundo</button>
+                    <button class="cfg-btn" onclick="abrirPerfil()">editar perfil</button>
+                    <button class="cfg-btn" onclick="abrirNomeApp()">editar nome app</button>
+                    <button class="cfg-btn" onclick="abrirCores('topo')">editar o topo e barra</button>
+                    <button class="cfg-btn" onclick="abrirCores('letras')">mudar a cor das letras</button>
+                    <button class="cfg-btn" onclick="abrirCores('botoes')">mudar a cor dos botões SVG</button>
+                </div>
+
+                <div id="cfg-cores" style="display:none;">
+                    <div class="cfg-swatches" id="cfg-swatches"></div>
+                    <button class="cfg-link" onclick="restaurarPadraoCor()">restaurar cor padrão</button>
+                    <div class="cfg-acoes">
+                        <button class="cfg-voltar" onclick="voltarMenuConfig()">Voltar</button>
+                        <button class="cfg-salvar" onclick="salvarCores()">SALVAR</button>
+                    </div>
+                </div>
+
+                <div id="cfg-perfil" style="display:none;">
+                    <div class="cfg-label">nome do perfil</div>
+                    <input type="text" id="cfg-input-perfil" class="cfg-input" placeholder="Seu nome" maxlength="30">
+                    <div class="cfg-acoes">
+                        <button class="cfg-voltar" onclick="voltarMenuConfig()">Voltar</button>
+                        <button class="cfg-salvar" onclick="salvarPerfil()">SALVAR</button>
+                    </div>
+                </div>
+
+                <div id="cfg-nomeapp" style="display:none;">
+                    <div class="cfg-label">nome do aplicativo</div>
+                    <input type="text" id="cfg-input-nomeapp" class="cfg-input" placeholder="Nome do app" maxlength="20">
+                    <div class="cfg-acoes">
+                        <button class="cfg-voltar" onclick="voltarMenuConfig()">Voltar</button>
+                        <button class="cfg-salvar" onclick="salvarNomeApp()">SALVAR</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="toast" class="toast">Ação salva!</div>
@@ -668,6 +734,162 @@
         }
     }
 
+    // =====================================================
+    // CONFIGURAÇÕES DO APP (cores, nome do app, perfil)
+    // =====================================================
+    const CONFIG_PADRAO = { fundo: '#fcf7d4', topo: '#ff0000', letras: null, botoes: '#ffffff', nomeApp: 'My App' };
+    const PALETAS = {
+        fundo:  { titulo: 'cor do fundo',  cores: [['#fcf7d4', 'Amarelo'], ['#d6ecff', 'Azul'], ['#d9f7d9', 'Verde'], ['#ffe0ec', 'Rosa'], ['#e8e8e8', 'Cinza']] },
+        topo:   { titulo: 'topo e barra',  cores: [['#ff0000', 'Vermelho'], ['#1e90ff', 'Azul'], ['#00b050', 'Verde'], ['#ff8c00', 'Laranja'], ['#ff4fa3', 'Rosa']] },
+        letras: { titulo: 'cor das letras', cores: [['#000000', 'Preto'], ['#ffffff', 'Branco'], ['#ffeb00', 'Amarelo'], ['#0033cc', 'Azul'], ['#00cc00', 'Verde']] },
+        botoes: { titulo: 'botões SVG',    cores: [['#ffffff', 'Branco'], ['#000000', 'Preto'], ['#ffeb00', 'Amarelo'], ['#00ff00', 'Verde'], ['#0033cc', 'Azul']] }
+    };
+    let cfgSalva = { ...CONFIG_PADRAO };   // o que está salvo
+    let cfgAtual = { ...CONFIG_PADRAO };   // o que está na tela (inclui prévia)
+    let cfgChave = null;                   // qual cor está sendo editada
+
+    function carregarConfig() {
+        try {
+            const t = localStorage.getItem('myAppConfig');
+            if (t) cfgSalva = { ...CONFIG_PADRAO, ...JSON.parse(t) };
+        } catch (e) {}
+        cfgAtual = { ...cfgSalva };
+        aplicarConfig(cfgAtual);
+    }
+
+    function guardarConfig() {
+        try { localStorage.setItem('myAppConfig', JSON.stringify(cfgSalva)); } catch (e) {}
+    }
+
+    function ajustarTituloApp(nome) {
+        const h = document.getElementById('main-app-name');
+        const n = nome.length;
+        h.style.fontSize = n <= 8 ? '45px' : n <= 11 ? '36px' : n <= 15 ? '28px' : '22px';
+        h.style.wordBreak = 'break-word';
+    }
+
+    function aplicarConfig(c) {
+        const r = document.documentElement.style;
+        r.setProperty('--bg-beige', c.fundo);
+        r.setProperty('--primary-red', c.topo);
+        r.setProperty('--cor-botoes', c.botoes);
+        if (c.letras) {
+            r.setProperty('--letras-titulo', c.letras);
+            r.setProperty('--letras-verde', c.letras);
+        } else {
+            r.removeProperty('--letras-titulo');
+            r.removeProperty('--letras-verde');
+        }
+        document.getElementById('main-app-name').innerText = c.nomeApp;
+        ajustarTituloApp(c.nomeApp);
+        document.title = c.nomeApp + ' - Estoque';
+    }
+
+    function mostrarViewConfig(view, titulo) {
+        ['cfg-menu', 'cfg-cores', 'cfg-perfil', 'cfg-nomeapp'].forEach(id => {
+            document.getElementById(id).style.display = (id === view) ? 'block' : 'none';
+        });
+        document.getElementById('config-titulo').innerText = titulo;
+    }
+
+    function abrirConfig() {
+        cfgAtual = { ...cfgSalva };
+        aplicarConfig(cfgAtual);
+        mostrarViewConfig('cfg-menu', 'configuração');
+        document.getElementById('config-overlay').classList.add('active');
+    }
+
+    function fecharConfig() {
+        // descarta qualquer prévia que não foi salva
+        cfgAtual = { ...cfgSalva };
+        aplicarConfig(cfgAtual);
+        document.getElementById('config-overlay').classList.remove('active');
+    }
+
+    function voltarMenuConfig() {
+        cfgAtual = { ...cfgSalva };
+        aplicarConfig(cfgAtual);
+        mostrarViewConfig('cfg-menu', 'configuração');
+    }
+
+    function abrirCores(chave) {
+        cfgChave = chave;
+        mostrarViewConfig('cfg-cores', PALETAS[chave].titulo);
+        desenharCores();
+    }
+
+    function desenharCores() {
+        const box = document.getElementById('cfg-swatches');
+        box.innerHTML = '';
+        PALETAS[cfgChave].cores.forEach(([cor, nome]) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'cfg-swatch-wrap';
+            const bola = document.createElement('div');
+            bola.className = 'cfg-swatch' + (cfgAtual[cfgChave] === cor ? ' sel' : '');
+            bola.style.backgroundColor = cor;
+            const rotulo = document.createElement('span');
+            rotulo.innerText = nome;
+            wrap.appendChild(bola);
+            wrap.appendChild(rotulo);
+            wrap.onclick = () => {
+                cfgAtual[cfgChave] = cor;   // prévia na hora
+                aplicarConfig(cfgAtual);
+                desenharCores();
+            };
+            box.appendChild(wrap);
+        });
+    }
+
+    function restaurarPadraoCor() {
+        cfgAtual[cfgChave] = CONFIG_PADRAO[cfgChave];
+        aplicarConfig(cfgAtual);
+        desenharCores();
+    }
+
+    function salvarCores() {
+        cfgSalva[cfgChave] = cfgAtual[cfgChave];
+        guardarConfig();
+        mostrarViewConfig('cfg-menu', 'configuração');
+        mostrarToast("Cor salva!");
+    }
+
+    function abrirPerfil() {
+        const atual = document.getElementById('main-user-name').innerText;
+        document.getElementById('cfg-input-perfil').value = (atual === 'nome do usuário') ? '' : atual;
+        mostrarViewConfig('cfg-perfil', 'editar perfil');
+    }
+
+    async function salvarPerfil() {
+        const nome = document.getElementById('cfg-input-perfil').value.trim();
+        if (!nome) { mostrarToast("Digite um nome!", true); return; }
+        document.getElementById('main-user-name').innerText = nome;
+        mostrarViewConfig('cfg-menu', 'configuração');
+        mostrarToast("Perfil salvo!");
+        try {
+            await fetch(`${URL_SERVIDOR}/usuarios`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome: nome, foto: window.fotoUsuario || null })
+            });
+        } catch (erro) {}
+    }
+
+    function abrirNomeApp() {
+        document.getElementById('cfg-input-nomeapp').value = cfgSalva.nomeApp;
+        mostrarViewConfig('cfg-nomeapp', 'editar nome app');
+    }
+
+    function salvarNomeApp() {
+        const nome = document.getElementById('cfg-input-nomeapp').value.trim();
+        if (!nome) { mostrarToast("Digite o nome do app!", true); return; }
+        cfgSalva.nomeApp = nome;
+        cfgAtual.nomeApp = nome;
+        aplicarConfig(cfgAtual);
+        guardarConfig();
+        mostrarViewConfig('cfg-menu', 'configuração');
+        mostrarToast("Nome do app salvo!");
+    }
+
     // ===== MENU DE OPÇÕES DO PRODUTO (botão de configuração) =====
     let idMenuProd = null;
 
@@ -909,6 +1131,7 @@
             mostrarToast("Erro ao remover item.", true);
         }
     }
+    carregarConfig();
 </script>
 
 </body>

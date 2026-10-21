@@ -38,6 +38,14 @@
         .content-area { flex: 1; background-color: var(--bg-gray); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
         .content-screen { display: none; width: 100%; height: 100%; flex-direction: column; }
         .content-screen.active { display: flex; }
+        .chat-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .chat-topo .content-title { margin-bottom: 0; }
+        .btn-engrenagem { width: 42px; height: 42px; border-radius: 50%; background: #000; border: none; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
+        .btn-engrenagem:active { transform: scale(0.92); }
+        .btn-engrenagem svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .check-limpar { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; font-weight: bold; margin-bottom: 22px; cursor: pointer; }
+        .check-limpar input { width: 22px; height: 22px; cursor: pointer; accent-color: #ff0000; }
+        .btn-danger:disabled { opacity: 0.35; cursor: not-allowed; }
         .content-title { font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #000; text-transform: uppercase; }
 
         /* LISTAS E CARDS */
@@ -213,7 +221,12 @@
             </div>
 
             <div id="aba-chat" class="content-screen">
-                <div class="content-title">My App Chat</div>
+                <div class="chat-topo">
+                    <div class="content-title">My App Chat</div>
+                    <button class="btn-engrenagem" title="Configurações do chat" onclick="abrirConfigChat()">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </button>
+                </div>
                 <div class="chat-area">
                     <div class="chat-messages" id="chat-painel-mensagens"></div>
                     <div class="chat-input-panel">
@@ -233,6 +246,20 @@
         <div class="notification-text">
             <h4>Notificação do Sistema</h4>
             <p>O App acaba de enviar uma nova atualização de estoque!</p>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-config-chat" onclick="if(event.target === this) fecharConfigChat()">
+        <div class="modal-confirm">
+            <h3>Configurações do chat</h3>
+            <label class="check-limpar">
+                <input type="checkbox" id="check-limpar-historico" onchange="atualizarBotaoLimpar()">
+                Limpar o histórico
+            </label>
+            <div class="btns">
+                <button class="btn-cancel" onclick="fecharConfigChat()">Cancelar</button>
+                <button class="btn-danger" id="btn-apagar-historico" onclick="apagarHistoricoChat()" disabled>Apagar</button>
+            </div>
         </div>
     </div>
 
@@ -320,7 +347,7 @@
         } catch (e) {}
     }
 
-    function notificar(titulo, texto, icone, tipo) {
+    function notificar(titulo, texto, icone, tipo, semSom) {
         const box = document.getElementById('notif-container');
         const item = document.createElement('div');
         item.className = 'notif-item ' + (tipo || '');
@@ -343,7 +370,7 @@
         box.appendChild(item);
 
         requestAnimationFrame(() => requestAnimationFrame(() => item.classList.add('show')));
-        tocarSomNotificacao();
+        if (!semSom) tocarSomNotificacao();
 
         // limita a 4 pop-ups na tela ao mesmo tempo
         while (box.children.length > 4) box.removeChild(box.firstChild);
@@ -388,6 +415,46 @@
             notificar('Nova mensagem', msg.texto, '💬', 'msg');
         }
     });
+
+    socket.on('historicoLimpo', () => {
+        document.getElementById('chat-painel-mensagens').innerHTML = '';
+        document.getElementById('chat-badge').style.display = 'none';
+    });
+
+    // ===== CONFIGURAÇÕES DO CHAT (limpar histórico) =====
+    function abrirConfigChat() {
+        document.getElementById('check-limpar-historico').checked = false;
+        atualizarBotaoLimpar();
+        document.getElementById('modal-config-chat').classList.add('active');
+    }
+
+    function fecharConfigChat() {
+        document.getElementById('modal-config-chat').classList.remove('active');
+    }
+
+    function atualizarBotaoLimpar() {
+        document.getElementById('btn-apagar-historico').disabled = !document.getElementById('check-limpar-historico').checked;
+    }
+
+    async function apagarHistoricoChat() {
+        if (!document.getElementById('check-limpar-historico').checked) return;
+        const botao = document.getElementById('btn-apagar-historico');
+        botao.disabled = true;
+        try {
+            const res = await fetch(`${URL_SERVIDOR}/mensagens`, { method: 'DELETE' });
+            if (res.ok) {
+                document.getElementById('chat-painel-mensagens').innerHTML = '';
+                fecharConfigChat();
+                notificar('Chat', 'Histórico apagado com sucesso', '🗑️', '', true);
+            } else {
+                alert("O servidor não conseguiu apagar o histórico.");
+                atualizarBotaoLimpar();
+            }
+        } catch (erro) {
+            alert("Erro de conexão ao apagar o histórico.");
+            atualizarBotaoLimpar();
+        }
+    }
 
     async function carregarMensagensPainel() {
         try {

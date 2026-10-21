@@ -134,11 +134,11 @@ app.get('/usuarios', rota(async (req, res) => {
 }));
 
 app.post('/usuarios', rota(async (req, res) => {
-    const usuario = await Usuario.findOneAndUpdate(
-        { nome: req.body.nome },
-        { foto: req.body.foto, ultimoAcesso: Date.now() },
-        { upsert: true, new: true }
-    );
+    const nome = String(req.body.nome || '').trim();
+    if (!nome) return res.status(400).json({ erro: 'Nome obrigatório' });
+    const atualiza = { ultimoAcesso: Date.now() };
+    if (req.body.foto) atualiza.foto = req.body.foto; // sem foto nova, mantém a que já está salva
+    const usuario = await Usuario.findOneAndUpdate({ nome }, atualiza, { upsert: true, new: true });
     res.json(usuario);
 }));
 

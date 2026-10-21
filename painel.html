@@ -196,7 +196,7 @@
                 <div class="content-title">Histórico de Saídas</div>
                 <table class="data-table">
                     <thead>
-                        <tr><th>Produto</th><th>Qtd</th><th>Data</th><th>Ações</th></tr>
+                        <tr><th>Produto</th><th>Qtd</th><th>Tipo</th><th>Data</th><th>Ações</th></tr>
                     </thead>
                     <tbody id="tabela-saiu"></tbody>
                 </table>
@@ -658,8 +658,9 @@
         if (!Array.isArray(lista)) return [];
         lista.forEach(item => {
             const nome = String(item.nome || '').trim();
-            const chave = nome.toLowerCase();
-            if (!mapa.has(chave)) mapa.set(chave, { nome: nome, total: 0, ultimaData: '', ids: [], vezes: 0 });
+            const unidade = String(item.unidade || '').trim().toLowerCase();
+            const chave = nome.toLowerCase() + '|' + unidade; // quilo, unidade e pacote não se misturam
+            if (!mapa.has(chave)) mapa.set(chave, { nome: nome, unidade: unidade, total: 0, ultimaData: '', ids: [], vezes: 0 });
             const g = mapa.get(chave);
             g.total += numeroDe(item.qtd);
             g.ids.push(item._id);
@@ -669,12 +670,20 @@
         return Array.from(mapa.values());
     }
 
+    const ROTULOS_TIPO = { quilo: ['quilo', 'quilos'], unidade: ['unidade', 'unidades'], pacote: ['pacote', 'pacotes'] };
+    const CORES_TIPO = { quilo: '#ffcc00', unidade: '#00ffff', pacote: '#ff99cc' };
+
+    function rotuloTipo(unidade, total) {
+        const r = ROTULOS_TIPO[unidade];
+        return r ? (total === 1 ? r[0] : r[1]) : '';
+    }
+
     function renderSaiuPainel() {
         const container = document.getElementById('tabela-saiu');
         if(!container) return;
         container.innerHTML = '';
         gruposSaidas = agruparSaidas(dadosSairam);
-        if (gruposSaidas.length === 0) container.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum item saiu.</td></tr>';
+        if (gruposSaidas.length === 0) container.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum item saiu.</td></tr>';
 
         gruposSaidas.forEach((g, i) => {
             const detalhe = g.vezes > 1 ? ` <small style="color:#777; font-weight:normal;">(${g.vezes} saídas)</small>` : '';
@@ -682,6 +691,9 @@
                 <tr>
                     <td style="font-weight: bold;">${g.nome}</td>
                     <td style="font-weight: bold;">${formatarNumero(g.total)}${detalhe}</td>
+                    <td>${g.unidade && CORES_TIPO[g.unidade]
+                        ? `<span style="background:${CORES_TIPO[g.unidade]}; border:2px solid #000; border-radius:12px; padding:2px 10px; font-weight:bold;">${g.unidade}</span>`
+                        : '<span style="color:#999;">--</span>'}</td>
                     <td>${g.ultimaData || '--'}</td>
                     <td>
                         <button class="action-icon-btn" title="Apagar registros deste produto" onclick="solicitarApagarGrupo(${i})">
@@ -748,22 +760,22 @@
         const container = document.getElementById('tabela-calculo');
         container.innerHTML = '';
 
-        const resumo = {};
-        agruparSaidas(dadosSairam).forEach(g => { resumo[g.nome] = g.total; });
+        const grupos = agruparSaidas(dadosSairam);
 
-        if (Object.keys(resumo).length === 0) {
+        if (grupos.length === 0) {
             container.innerHTML = '<tr><td colspan="2" style="text-align: center;">Nenhuma saída registrada.</td></tr>';
             return;
         }
 
-        for (const [produto, total] of Object.entries(resumo)) {
+        grupos.forEach(g => {
+            const rotulo = rotuloTipo(g.unidade, g.total) || 'un';
             container.innerHTML += `
                 <tr>
-                    <td style="font-weight: bold;">${produto}</td>
-                    <td style="color: #ff0000; font-weight: bold;">${formatarNumero(total)} un</td>
+                    <td style="font-weight: bold;">${g.nome}</td>
+                    <td style="color: #ff0000; font-weight: bold;">${formatarNumero(g.total)} ${rotulo}</td>
                 </tr>
             `;
-        }
+        });
     }
 
     function mostrarNotificacao() {

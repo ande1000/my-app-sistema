@@ -431,6 +431,7 @@
     const socket = io(URL_SERVIDOR);
     socket.on('connect', () => { carregarMensagensAntigas(); });
     socket.on('receberMensagem', (msg) => { adicionarMensagemNaTela(msg); });
+    socket.on('historicoLimpo', () => { document.getElementById('chat-mensagens').innerHTML = ''; });
 
     async function carregarMensagensAntigas() {
         try {

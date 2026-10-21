@@ -70,6 +70,15 @@
         /* CÁLCULO */
         .calc-btn { background-color: #00ff00; border: 2px solid #000; padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-bottom: 20px; align-self: flex-start; transition: 0.2s; }
         .calc-btn:active { transform: scale(0.95); }
+        .calc-filtro { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 12px; }
+        .calc-filtro .calc-btn { margin-bottom: 0; align-self: flex-end; }
+        .calc-campo { display: flex; flex-direction: column; gap: 4px; }
+        .calc-campo label { font-size: 13px; font-weight: bold; color: #000; padding-left: 6px; }
+        .calc-data { border: 3px solid #000; border-radius: 20px; padding: 8px 14px; font-size: 15px; font-weight: bold; background: #fff; color: #000; outline: none; }
+        .calc-atalhos { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+        .calc-atalhos button { background: #fff; border: 2px solid #000; border-radius: 14px; padding: 4px 12px; font-size: 13px; font-weight: bold; cursor: pointer; }
+        .calc-atalhos button:active { transform: scale(0.95); }
+        #calc-periodo { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 12px; min-height: 18px; }
 
         /* CHAT */
         .chat-area { display: flex; flex-direction: column; height: 100%; }
@@ -203,14 +212,31 @@
             </div>
 
             <div id="aba-calculo" class="content-screen">
-                <div class="content-title">Cálculo Semanal (Últimos 7 dias)</div>
-                <button class="calc-btn" onclick="calcularSemanal()">CALCULAR RESUMO</button>
+                <div class="content-title">Cálculo por Período</div>
+                <div class="calc-filtro">
+                    <div class="calc-campo">
+                        <label for="calc-inicio">Data de entrada</label>
+                        <input type="date" id="calc-inicio" class="calc-data">
+                    </div>
+                    <div class="calc-campo">
+                        <label for="calc-fim">Data de saída</label>
+                        <input type="date" id="calc-fim" class="calc-data">
+                    </div>
+                    <button class="calc-btn" onclick="calcularSemanal()">CALCULAR RESUMO</button>
+                </div>
+                <div class="calc-atalhos">
+                    <button onclick="atalhoPeriodo(0)">Hoje</button>
+                    <button onclick="atalhoPeriodo(6)">Últimos 7 dias</button>
+                    <button onclick="atalhoPeriodo(29)">Últimos 30 dias</button>
+                    <button onclick="atalhoPeriodo(-1)">Tudo</button>
+                </div>
+                <div id="calc-periodo"></div>
                 <table class="data-table">
                     <thead>
-                        <tr><th>Produto</th><th>Total que saiu na semana</th></tr>
+                        <tr><th>Produto</th><th>Total que saiu no período</th></tr>
                     </thead>
                     <tbody id="tabela-calculo">
-                        <tr><td colspan="2" style="text-align: center;">Clique em "Calcular Resumo" para agrupar os itens.</td></tr>
+                        <tr><td colspan="2" style="text-align: center;">Escolha as datas e clique em "Calcular Resumo".</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -756,14 +782,68 @@
         });
     }
 
+    // ===== CÁLCULO POR PERÍODO (data de entrada até data de saída) =====
+    function dataLocal(d) {
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function formatarDataBR(iso) {
+        const [a, m, d] = iso.split('-');
+        return d + '/' + m + '/' + a;
+    }
+
+    function definirPeriodo(dias) {
+        if (dias < 0) { // "Tudo": sem filtro
+            document.getElementById('calc-inicio').value = '';
+            document.getElementById('calc-fim').value = '';
+            return;
+        }
+        const hoje = new Date();
+        const inicio = new Date();
+        inicio.setDate(hoje.getDate() - dias);
+        document.getElementById('calc-inicio').value = dataLocal(inicio);
+        document.getElementById('calc-fim').value = dataLocal(hoje);
+    }
+
+    function atalhoPeriodo(dias) {
+        definirPeriodo(dias);
+        calcularSemanal();
+    }
+
+    function filtrarSaidasPorPeriodo(lista, inicio, fim) {
+        if (!Array.isArray(lista)) return [];
+        return lista.filter(s => {
+            const dt = String(s.data || '');
+            if ((inicio || fim) && !dt) return false;
+            if (inicio && dt < inicio) return false;
+            if (fim && dt > fim) return false;
+            return true;
+        });
+    }
+
     function calcularSemanal() {
         const container = document.getElementById('tabela-calculo');
-        container.innerHTML = '';
+        const inicio = document.getElementById('calc-inicio').value;
+        const fim = document.getElementById('calc-fim').value;
 
-        const grupos = agruparSaidas(dadosSairam);
+        if (inicio && fim && inicio > fim) {
+            avisoErro("A data de entrada não pode ser depois da data de saída.");
+            return;
+        }
+
+        const saidasPeriodo = filtrarSaidasPorPeriodo(dadosSairam, inicio, fim);
+        let periodo;
+        if (inicio && fim) periodo = inicio === fim ? 'Dia ' + formatarDataBR(inicio) : 'De ' + formatarDataBR(inicio) + ' até ' + formatarDataBR(fim);
+        else if (inicio) periodo = 'A partir de ' + formatarDataBR(inicio);
+        else if (fim) periodo = 'Até ' + formatarDataBR(fim);
+        else periodo = 'Todas as saídas registradas';
+        document.getElementById('calc-periodo').textContent = periodo + ' (' + saidasPeriodo.length + (saidasPeriodo.length === 1 ? ' saída)' : ' saídas)');
+
+        container.innerHTML = '';
+        const grupos = agruparSaidas(saidasPeriodo);
 
         if (grupos.length === 0) {
-            container.innerHTML = '<tr><td colspan="2" style="text-align: center;">Nenhuma saída registrada.</td></tr>';
+            container.innerHTML = '<tr><td colspan="2" style="text-align: center;">Nenhuma saída nesse período.</td></tr>';
             return;
         }
 
@@ -777,6 +857,8 @@
             `;
         });
     }
+
+    definirPeriodo(6); // começa com os últimos 7 dias
 
     function mostrarNotificacao() {
         // Botão "notificações": ativa o som e mostra um exemplo

@@ -267,7 +267,7 @@
         <div style="background: #fff; margin: auto; width: 90%; padding: 20px; border-radius: 20px; text-align: center;">
             <h1 style="font-size: 30px; font-weight: 900; margin-bottom: 20px;">SAIU</h1>
             <input type="text" id="sair-nome" class="input-field" placeholder="NOME DO PRODUTO" style="margin-bottom: 10px;" readonly>
-            <input type="text" id="sair-qtd" class="input-field" placeholder="QUANTIDADE" style="margin-bottom: 10px;">
+            <input type="text" inputmode="decimal" id="sair-qtd" class="input-field" placeholder="QUANTIDADE" style="margin-bottom: 10px;">
             <input type="date" id="sair-data" class="input-field" style="margin-bottom: 20px;">
             <button onclick="confirmarSaida()" style="background: red; border: none; cursor: pointer; margin: 0 auto; display: block;">
                 <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg>
@@ -437,6 +437,17 @@
                         <button class="cfg-salvar" onclick="salvarNomeApp()">SALVAR</button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-sair-conta" onclick="if(event.target === this) fecharModal('modal-sair-conta')">
+        <div class="modal-content">
+            <h2>SAIR DA CONTA?</h2>
+            <p>Para entrar de novo, é só digitar o mesmo nome de usuário.</p>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="fecharModal('modal-sair-conta')">Cancelar</button>
+                <button class="btn-confirm" style="background:#ff3b30; color:#fff;" onclick="confirmarSairDaConta()">Sair</button>
             </div>
         </div>
     </div>
@@ -657,7 +668,11 @@
     }
 
     function sairDaConta() {
-        if (!confirm("Sair desta conta? Para entrar de novo, é só digitar o mesmo nome de usuário.")) return;
+        document.getElementById('modal-sair-conta').classList.add('active');
+    }
+
+    function confirmarSairDaConta() {
+        fecharModal('modal-sair-conta');
         try { localStorage.removeItem(CHAVE_USUARIO); } catch (e) {}
         usuarioAtual = null;
         window.fotoUsuario = null;
@@ -971,7 +986,7 @@
         const prod = produtos.find(p => p._id === idMenuProd);
         fecharModal('modal-menu-prod');
         if (!prod) return;
-        if (acao === 'saiu') abrirPopUpSair(prod.nome);
+        if (acao === 'saiu') abrirPopUpSair(prod.nome, prod._id);
         else if (acao === 'repor') abrirModalRepor(prod._id, prod.nome);
         else if (acao === 'acabou') marcarAcabou(prod._id);
         else if (acao === 'obs') abrirModalObs(prod._id, prod.nome, String(prod.obs || ''));
@@ -1090,7 +1105,22 @@
         });
     }
 
-    function abrirPopUpSair(nomeProd) {
+    let idProdutoSaida = null;
+
+    // Lê o número do começo de um texto como "12 ovos" ou "2,5kg"
+    function lerQuantidade(txt) {
+        const m = String(txt === undefined || txt === null ? '' : txt).match(/^(\s*)(\d+(?:[.,]\d+)?)([\s\S]*)$/);
+        if (!m) return null;
+        return { n: parseFloat(m[2].replace(',', '.')), resto: m[3], virgula: m[2].includes(',') };
+    }
+
+    function formatarQuantidade(n, virgula) {
+        const t = String(Math.round(n * 1000) / 1000);
+        return virgula ? t.replace('.', ',') : t;
+    }
+
+    function abrirPopUpSair(nomeProd, idProd) {
+        idProdutoSaida = idProd || null;
         document.getElementById('sair-nome').value = nomeProd;
         document.getElementById('sair-qtd').value = '';
         document.getElementById('sair-data').value = new Date().toISOString().split('T')[0];
@@ -1099,20 +1129,53 @@
 
     async function confirmarSaida() {
         const nome = document.getElementById('sair-nome').value;
-        const qtd = document.getElementById('sair-qtd').value;
+        const qtdTxt = document.getElementById('sair-qtd').value.trim();
         const data = document.getElementById('sair-data').value;
-        if(!qtd) { mostrarToast("Digite a quantidade que saiu!"); return; }
+        if (!qtdTxt) { mostrarToast("Digite a quantidade que saiu!"); return; }
 
+        const saiu = lerQuantidade(qtdTxt);
+        if (!saiu || saiu.n <= 0) { mostrarToast("Digite um número maior que zero!", true); return; }
+
+        // descobre quanto sobra no estoque
+        const prod = produtos.find(p => p._id === idProdutoSaida) || produtos.find(p => p.nome === nome);
+        let novaQtd = null;
+        let aviso = '';
+        if (prod) {
+            const estoque = lerQuantidade(prod.qtd);
+            if (estoque) {
+                if (saiu.n > estoque.n) { mostrarToast("Só tem " + prod.qtd + " no estoque!", true); return; }
+                novaQtd = formatarQuantidade(estoque.n - saiu.n, estoque.virgula) + estoque.resto;
+            } else {
+                aviso = " (a quantidade do estoque não é um número, então não foi descontada)";
+            }
+        }
+
+        document.getElementById('loading-title').innerText = "Aguarde um momento...";
+        document.getElementById('loading-text').innerText = "Registrando a saída!";
+        document.getElementById('loading-overlay').classList.add('active');
         try {
-            await fetch(`${URL_SERVIDOR}/saidas`, {
+            const r1 = await fetch(`${URL_SERVIDOR}/saidas`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, qtd, data })
+                body: JSON.stringify({ nome: nome, qtd: formatarQuantidade(saiu.n, saiu.virgula), data: data })
             });
+            if (!r1.ok) throw new Error('saida');
+
+            if (novaQtd !== null) {
+                const r2 = await fetch(`${URL_SERVIDOR}/produtos/${prod._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ qtd: novaQtd })
+                });
+                if (!r2.ok) throw new Error('estoque');
+            }
+
             await carregarDados();
-            mostrarToast("Saída registrada!");
+            document.getElementById('loading-overlay').classList.remove('active');
+            mostrarToast("Saída registrada!" + aviso);
             abrirTela('tela-saiu-hist');
-        } catch(erro) {
+        } catch (erro) {
+            document.getElementById('loading-overlay').classList.remove('active');
             mostrarToast("Erro ao registrar saída.", true);
         }
     }

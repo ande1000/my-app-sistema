@@ -410,6 +410,7 @@
                     <button class="cfg-btn" onclick="abrirCores('topo')">editar o topo e barra</button>
                     <button class="cfg-btn" onclick="abrirCores('letras')">mudar a cor das letras</button>
                     <button class="cfg-btn" onclick="abrirCores('botoes')">mudar a cor dos botões SVG</button>
+                    <button class="cfg-link" onclick="sairDaConta()" style="margin-bottom:0;">sair da conta</button>
                 </div>
 
                 <div id="cfg-cores" style="display:none;">
@@ -550,33 +551,122 @@
     }
 
     
-    function previewImage(event, previewId) {
-        const reader = new FileReader();
-        reader.onload = function(){
-            document.getElementById(previewId).innerHTML = `<img src="${reader.result}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
-            if(previewId === 'photo-preview-user') window.fotoUsuario = reader.result;
-            if(previewId === 'photo-preview-product') window.fotoProduto = reader.result;
-        };
-        if(event.target.files[0]) reader.readAsDataURL(event.target.files[0]);
+    // Reduz a foto antes de salvar (foto de celular é pesada e deixa tudo lento)
+    function comprimirImagem(file, maxLado, qualidade) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = reject;
+            reader.onload = () => {
+                const img = new Image();
+                img.onerror = () => resolve(reader.result);
+                img.onload = () => {
+                    const escala = Math.min(1, maxLado / Math.max(img.width, img.height));
+                    const w = Math.max(1, Math.round(img.width * escala));
+                    const h = Math.max(1, Math.round(img.height * escala));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, w, h);
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', qualidade));
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
     }
-    
-    async function finalizarCriacao() {
-        const nome = document.getElementById('nome-usuario').value;
-        if(nome) {
-            document.getElementById('main-user-name').innerText = nome;
-            if(window.fotoUsuario) document.getElementById('main-photo').innerHTML = `<img src="${window.fotoUsuario}">`;
-            
-            try {
-                await fetch(`${URL_SERVIDOR}/usuarios`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome: nome, foto: window.fotoUsuario || null })
-                });
-            } catch(erro) {}
 
-            abrirTela('tela-principal');
-            carregarDados();
+    async function previewImage(event, previewId) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const resultado = await comprimirImagem(file, previewId === 'photo-preview-user' ? 400 : 700, 0.8);
+        document.getElementById(previewId).innerHTML = `<img src="${resultado}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+        if (previewId === 'photo-preview-user') window.fotoUsuario = resultado;
+        if (previewId === 'photo-preview-product') window.fotoProduto = resultado;
+    }
+
+    // =====================================================
+    // USUÁRIO: fica salvo no aparelho E no servidor (nuvem)
+    // =====================================================
+    const CHAVE_USUARIO = 'myAppUsuario';
+    let usuarioAtual = null;
+
+    function lembrarUsuario(nome, foto) {
+        try {
+            localStorage.setItem(CHAVE_USUARIO, JSON.stringify({ nome: nome, foto: foto }));
+        } catch (e) {
+            try { localStorage.setItem(CHAVE_USUARIO, JSON.stringify({ nome: nome, foto: null })); } catch (e2) {}
         }
+    }
+
+    function entrarNoApp(nome, foto) {
+        usuarioAtual = { nome: nome, foto: foto };
+        window.fotoUsuario = foto;
+        document.getElementById('main-user-name').innerText = nome;
+        document.getElementById('main-photo').innerHTML = foto ? `<img src="${foto}">` : '';
+        lembrarUsuario(nome, foto);
+        abrirTela('tela-principal');
+        carregarDados();
+    }
+
+    // Avisa o servidor que o usuário está online (aparece no painel de controle)
+    async function registrarPresenca() {
+        if (!usuarioAtual) return;
+        try {
+            await fetch(`${URL_SERVIDOR}/usuarios`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome: usuarioAtual.nome })
+            });
+        } catch (erro) {}
+    }
+    setInterval(registrarPresenca, 120000);
+
+    async function finalizarCriacao() {
+        const nome = document.getElementById('nome-usuario').value.trim();
+        if (!nome) { mostrarToast("Digite seu nome de usuário!", true); return; }
+
+        document.getElementById('loading-title').innerText = "Aguarde um momento...";
+        document.getElementById('loading-text').innerText = "Entrando na sua conta!";
+        document.getElementById('loading-overlay').classList.add('active');
+
+        let foto = window.fotoUsuario || null;
+        try {
+            const res = await fetch(`${URL_SERVIDOR}/usuarios`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome: nome, foto: foto })
+            });
+            if (res.ok) {
+                const u = await res.json();
+                // nome que já existia na nuvem: recupera a foto salva
+                if (!foto && u && u.foto) foto = u.foto;
+            }
+        } catch (erro) {}
+
+        document.getElementById('loading-overlay').classList.remove('active');
+        entrarNoApp(nome, foto);
+    }
+
+    function iniciarSessao() {
+        let u = null;
+        try { u = JSON.parse(localStorage.getItem(CHAVE_USUARIO)); } catch (e) {}
+        if (u && u.nome) {
+            entrarNoApp(u.nome, u.foto || null);
+            registrarPresenca();
+        }
+    }
+
+    function sairDaConta() {
+        if (!confirm("Sair desta conta? Para entrar de novo, é só digitar o mesmo nome de usuário.")) return;
+        try { localStorage.removeItem(CHAVE_USUARIO); } catch (e) {}
+        usuarioAtual = null;
+        window.fotoUsuario = null;
+        document.getElementById('nome-usuario').value = '';
+        document.getElementById('photo-preview-user').innerHTML = 'FOTO<br>DE<br>PERFIL';
+        fecharConfig();
+        abrirTela('tela-criacao');
     }
 
     // ===== CRIAR / EDITAR PRODUTO (mesma tela) =====
@@ -838,6 +928,8 @@
         const nome = document.getElementById('cfg-input-perfil').value.trim();
         if (!nome) { mostrarToast("Digite um nome!", true); return; }
         document.getElementById('main-user-name').innerText = nome;
+        usuarioAtual = { nome: nome, foto: window.fotoUsuario || null };
+        lembrarUsuario(nome, window.fotoUsuario || null);
         mostrarViewConfig('cfg-menu', 'configuração');
         mostrarToast("Perfil salvo!");
         try {
@@ -1107,6 +1199,7 @@
         }
     }
     carregarConfig();
+    iniciarSessao();
 </script>
 
 </body>

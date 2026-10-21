@@ -5,6 +5,7 @@ const http = require('http');
 const { Server } = require("socket.io");
 
 const app = express();
+app.set('trust proxy', true);
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
@@ -51,7 +52,7 @@ process.on('uncaughtException', (e) => console.log("uncaughtException:", e));
 // MODELOS
 // =====================================================
 const Produto = mongoose.model('Produto', new mongoose.Schema({
-    nome: String, qtd: String, dataReg: String, dataVal: String, obs: String, status: String, foto: String
+    nome: String, qtd: String, dataReg: String, dataVal: String, obs: String, status: String, foto: String, fotoVersao: Number
 }));
 const Saida = mongoose.model('Saida', new mongoose.Schema({
     nome: String, qtd: String, data: String
@@ -102,9 +103,61 @@ app.get('/status', async (req, res) => {
 });
 
 // PRODUTOS
-app.get('/produtos', rota(async (req, res) => res.json(await Produto.find())));
-app.post('/produtos', rota(async (req, res) => { const novo = new Produto(req.body); await novo.save(); res.json(novo); }));
-app.put('/produtos/:id', rota(async (req, res) => { await Produto.findByIdAndUpdate(req.params.id, req.body); res.json({ mensagem: "Atualizado!" }); }));
+// A lista NÃO envia as fotos (eram pesadas e travavam o banco gratuito).
+// Cada produto recebe só o link da foto; o navegador baixa uma vez e guarda no cache.
+function baseUrl(req) {
+    const proto = String(req.get('x-forwarded-proto') || req.protocol).split(',')[0];
+    return proto + '://' + req.get('host');
+}
+const ehFotoValida = (f) => typeof f === 'string' && f.startsWith('data:image/');
+
+app.get('/produtos', rota(async (req, res) => {
+    const lista = await Produto.aggregate([{
+        $project: {
+            nome: 1, qtd: 1, dataReg: 1, dataVal: 1, obs: 1, status: 1, fotoVersao: 1,
+            temFoto: { $gt: [{ $strLenCP: { $ifNull: ['$foto', ''] } }, 0] }
+        }
+    }]);
+    const base = baseUrl(req);
+    res.json(lista.map(p => {
+        const { temFoto, fotoVersao, ...resto } = p;
+        return { ...resto, foto: temFoto ? `${base}/produtos/${p._id}/foto?v=${fotoVersao || 0}` : null };
+    }));
+}));
+
+app.get('/produtos/:id/foto', async (req, res) => {
+    try {
+        const p = await Produto.findById(req.params.id).select('foto').lean();
+        if (!p || !ehFotoValida(p.foto)) return res.status(404).end();
+        const i = p.foto.indexOf(',');
+        const mime = (p.foto.slice(5, i).split(';')[0]) || 'image/jpeg';
+        res.set({ 'Content-Type': mime, 'Cache-Control': 'public, max-age=31536000, immutable' });
+        res.send(Buffer.from(p.foto.slice(i + 1), 'base64'));
+    } catch (erro) {
+        res.status(500).end();
+    }
+});
+
+app.post('/produtos', rota(async (req, res) => {
+    const dados = { ...req.body };
+    delete dados._id;
+    if (ehFotoValida(dados.foto)) dados.fotoVersao = Date.now();
+    else dados.foto = null;
+    const novo = new Produto(dados);
+    await novo.save();
+    res.json({ _id: novo._id, mensagem: "Criado!" });
+}));
+
+app.put('/produtos/:id', rota(async (req, res) => {
+    const dados = { ...req.body };
+    delete dados._id;
+    delete dados.fotoVersao;
+    if (ehFotoValida(dados.foto)) dados.fotoVersao = Date.now(); // foto nova
+    else delete dados.foto;                                       // sem foto nova: mantém a atual
+    await Produto.findByIdAndUpdate(req.params.id, dados);
+    res.json({ mensagem: "Atualizado!" });
+}));
+
 app.delete('/produtos/:id', rota(async (req, res) => { await Produto.findByIdAndDelete(req.params.id); res.json({ mensagem: "Apagado!" }); }));
 
 // SAÍDAS

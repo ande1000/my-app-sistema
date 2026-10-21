@@ -285,12 +285,12 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="modal-confirm">
+    <div class="modal-overlay" id="modal-pergunta" onclick="if(event.target === this) fecharPergunta()">
         <div class="modal-confirm">
-            <h3>Tem certeza que deseja apagar este registro?</h3>
+            <h3 id="pergunta-titulo">Tem certeza?</h3>
             <div class="btns">
-                <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
-                <button class="btn-danger" onclick="confirmarApagar()">Apagar</button>
+                <button class="btn-cancel" onclick="fecharPergunta()">Cancelar</button>
+                <button class="btn-danger" id="pergunta-ok" onclick="confirmarPergunta()">Confirmar</button>
             </div>
         </div>
     </div>
@@ -315,7 +315,7 @@
     let dadosSairam = [];
     let dadosListaCompras = [];
     let dadosUsuarios = [];
-    let idParaApagar = null;
+    let gruposSaidas = [];
     let abaAtual = 'estoque';
 
     // =====================================================
@@ -469,11 +469,11 @@
                 fecharConfigChat();
                 notificar('Chat', 'Histórico apagado com sucesso', '🗑️', '', true);
             } else {
-                alert("O servidor não conseguiu apagar o histórico.");
+                avisoErro("O servidor não conseguiu apagar o histórico.");
                 atualizarBotaoLimpar();
             }
         } catch (erro) {
-            alert("Erro de conexão ao apagar o histórico.");
+            avisoErro("Erro de conexão ao apagar o histórico.");
             atualizarBotaoLimpar();
         }
     }
@@ -525,7 +525,8 @@
             }
             
             const resSaidas = await fetch(`${URL_SERVIDOR}/saidas`);
-            dadosSairam = await resSaidas.json();
+            const listaSaidas = await resSaidas.json();
+            if (Array.isArray(listaSaidas)) dadosSairam = listaSaidas;
 
             const resLista = await fetch(`${URL_SERVIDOR}/lista`);
             dadosListaCompras = await resLista.json();
@@ -630,25 +631,69 @@
         });
     }
 
+    // ===== SAÍDAS: soma tudo que saiu do mesmo produto =====
+    function numeroDe(txt) {
+        const m = String(txt === undefined || txt === null ? '' : txt).match(/^\s*(\d+(?:[.,]\d+)?)/);
+        return m ? parseFloat(m[1].replace(',', '.')) : 0;
+    }
+
+    function formatarNumero(n) {
+        return String(Math.round(n * 1000) / 1000).replace('.', ',');
+    }
+
+    function agruparSaidas(lista) {
+        const mapa = new Map();
+        if (!Array.isArray(lista)) return [];
+        lista.forEach(item => {
+            const nome = String(item.nome || '').trim();
+            const chave = nome.toLowerCase();
+            if (!mapa.has(chave)) mapa.set(chave, { nome: nome, total: 0, ultimaData: '', ids: [], vezes: 0 });
+            const g = mapa.get(chave);
+            g.total += numeroDe(item.qtd);
+            g.ids.push(item._id);
+            g.vezes++;
+            if ((item.data || '') > g.ultimaData) g.ultimaData = item.data || '';
+        });
+        return Array.from(mapa.values());
+    }
+
     function renderSaiuPainel() {
         const container = document.getElementById('tabela-saiu');
         if(!container) return;
         container.innerHTML = '';
-        if (dadosSairam.length === 0) container.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum item saiu.</td></tr>';
+        gruposSaidas = agruparSaidas(dadosSairam);
+        if (gruposSaidas.length === 0) container.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum item saiu.</td></tr>';
 
-        dadosSairam.forEach(item => {
+        gruposSaidas.forEach((g, i) => {
+            const detalhe = g.vezes > 1 ? ` <small style="color:#777; font-weight:normal;">(${g.vezes} saídas)</small>` : '';
             container.innerHTML += `
                 <tr>
-                    <td style="font-weight: bold;">${item.nome}</td>
-                    <td>${item.qtd}</td>
-                    <td>${item.data}</td>
+                    <td style="font-weight: bold;">${g.nome}</td>
+                    <td style="font-weight: bold;">${formatarNumero(g.total)}${detalhe}</td>
+                    <td>${g.ultimaData || '--'}</td>
                     <td>
-                        <button class="action-icon-btn" title="Apagar Registro" onclick="solicitarApagar('${item._id}')">
+                        <button class="action-icon-btn" title="Apagar registros deste produto" onclick="solicitarApagarGrupo(${i})">
                             <svg viewBox="0 0 24 24" fill="none" stroke="#ff0000" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                     </td>
                 </tr>
             `;
+        });
+    }
+
+    function solicitarApagarGrupo(i) {
+        const g = gruposSaidas[i];
+        if (!g) return;
+        const ids = g.ids.slice();
+        const msg = g.vezes > 1
+            ? `Apagar as ${g.vezes} saídas de "${g.nome}"?`
+            : `Apagar a saída de "${g.nome}"?`;
+        pedirConfirmacao(msg, 'Apagar', async () => {
+            try {
+                for (const id of ids) await fetch(`${URL_SERVIDOR}/saidas/${id}`, { method: 'DELETE' });
+            } catch (erro) { avisoErro("Erro ao apagar as saídas."); }
+            await carregarDadosPainel();
+            renderSaiuPainel();
         });
     }
 
@@ -692,10 +737,7 @@
         container.innerHTML = '';
 
         const resumo = {};
-        dadosSairam.forEach(item => {
-            if (resumo[item.nome]) resumo[item.nome] += parseInt(item.qtd);
-            else resumo[item.nome] = parseInt(item.qtd);
-        });
+        agruparSaidas(dadosSairam).forEach(g => { resumo[g.nome] = g.total; });
 
         if (Object.keys(resumo).length === 0) {
             container.innerHTML = '<tr><td colspan="2" style="text-align: center;">Nenhuma saída registrada.</td></tr>';
@@ -706,7 +748,7 @@
             container.innerHTML += `
                 <tr>
                     <td style="font-weight: bold;">${produto}</td>
-                    <td style="color: #ff0000; font-weight: bold;">${total} un</td>
+                    <td style="color: #ff0000; font-weight: bold;">${formatarNumero(total)} un</td>
                 </tr>
             `;
         }
@@ -719,42 +761,46 @@
         notificar('Notificações ativadas', 'Você será avisado de novidades!', '🔔', '');
     }
 
-    function solicitarApagar(id) {
-        idParaApagar = id;
-        document.getElementById('modal-confirm').classList.add('active');
+    // ===== PERGUNTAS E AVISOS DENTRO DO PAINEL (sem pop-up do navegador) =====
+    let acaoConfirmada = null;
+
+    function pedirConfirmacao(titulo, textoBotao, acao) {
+        document.getElementById('pergunta-titulo').innerText = titulo;
+        document.getElementById('pergunta-ok').innerText = textoBotao;
+        acaoConfirmada = acao;
+        document.getElementById('modal-pergunta').classList.add('active');
     }
 
-    function fecharModal() {
-        document.getElementById('modal-confirm').classList.remove('active');
-        idParaApagar = null;
+    function fecharPergunta() {
+        document.getElementById('modal-pergunta').classList.remove('active');
+        acaoConfirmada = null;
     }
 
-    async function confirmarApagar() {
-        if (idParaApagar !== null) {
-            try {
-                await fetch(`${URL_SERVIDOR}/saidas/${idParaApagar}`, { method: 'DELETE' });
-                await carregarDadosPainel();
-                renderSaiuPainel();
-            } catch(erro) {}
-            fecharModal();
-        }
+    async function confirmarPergunta() {
+        const acao = acaoConfirmada;
+        fecharPergunta();
+        if (acao) await acao();
     }
 
-    // FUNÇÃO PARA APAGAR O USUÁRIO DO BANCO DE DADOS
-    async function apagarUsuario(id) {
-        if (confirm("Tem certeza que deseja apagar este usuário do sistema?")) {
+    function avisoErro(msg) {
+        notificar('Atenção', msg, '⚠️', 'acabou', true);
+    }
+
+    // APAGAR O USUÁRIO DO BANCO DE DADOS
+    function apagarUsuario(id) {
+        pedirConfirmacao('Tem certeza que deseja apagar este usuário do sistema?', 'Apagar', async () => {
             try {
                 const res = await fetch(`${URL_SERVIDOR}/usuarios/${id}`, { method: 'DELETE' });
-                if(res.ok) {
+                if (res.ok) {
                     await carregarDadosPainel();
                     renderUsuariosPainel();
                 } else {
-                    alert("Erro ao tentar apagar o usuário.");
+                    avisoErro("Erro ao tentar apagar o usuário.");
                 }
-            } catch(erro) {
-                alert("Erro de conexão ao apagar usuário.");
+            } catch (erro) {
+                avisoErro("Erro de conexão ao apagar usuário.");
             }
-        }
+        });
     }
 
     // =====================================================
@@ -793,9 +839,10 @@
     }
 
     function sairConta() {
-        if (!confirm("Sair da conta do painel?")) return;
-        try { localStorage.removeItem(CHAVE_PAINEL); } catch (e) {}
-        abrirTelaConta();
+        pedirConfirmacao('Sair da conta do painel?', 'Sair', () => {
+            try { localStorage.removeItem(CHAVE_PAINEL); } catch (e) {}
+            abrirTelaConta();
+        });
     }
 
     iniciarContaPainel();

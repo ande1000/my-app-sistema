@@ -88,6 +88,17 @@
         .notification-text h4 { font-size: 14px; margin-bottom: 2px; }
         .notification-text p { font-size: 12px; color: #555; }
 
+        /* CONTA DO PAINEL */
+        #tela-conta-painel { position: fixed; inset: 0; background: var(--header-purple); z-index: 5000; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .conta-card { background: #fff; width: 100%; max-width: 380px; border: 4px solid #000; border-radius: 20px; padding: 30px 24px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+        .conta-card svg { width: 54px; height: 54px; stroke: #000; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .conta-card h1 { font-size: 30px; font-weight: 900; margin: 10px 0 4px; letter-spacing: 1px; }
+        .conta-card p { font-size: 13px; color: #555; margin-bottom: 20px; }
+        .conta-card input { width: 100%; padding: 12px; border: 3px solid #000; border-radius: 20px; font-size: 16px; font-weight: bold; text-align: center; outline: none; }
+        .conta-card button { margin-top: 18px; background: #00ff00; color: #000; font-weight: 900; font-size: 18px; border: 3px solid #000; border-radius: 14px; padding: 12px 30px; cursor: pointer; }
+        .conta-card button:active { transform: scale(0.97); }
+        #conta-painel-erro { color: #cc0000; font-size: 13px; font-weight: bold; margin-top: 10px; min-height: 16px; }
+
         /* NOTIFICAÇÕES PEQUENAS (estilo WhatsApp) */
         #notif-container { position: fixed; top: 80px; right: 15px; display: flex; flex-direction: column; gap: 8px; z-index: 2000; pointer-events: none; }
         .notif-item { display: flex; align-items: center; gap: 10px; background: #fff; border-left: 5px solid #25d366; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.3); padding: 10px 14px; width: 270px; max-width: calc(100vw - 30px); opacity: 0; transform: translateX(120%); transition: transform 0.35s ease, opacity 0.35s ease; pointer-events: auto; }
@@ -235,6 +246,17 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="tela-conta-painel">
+        <div class="conta-card">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <h1>CRIAR CONTA</h1>
+            <p>Defina o nome de usuário do painel de controle</p>
+            <input type="text" id="conta-painel-nome" placeholder="Nome de usuário" maxlength="30" onkeydown="if(event.key === 'Enter') criarContaPainel()">
+            <div id="conta-painel-erro"></div>
+            <button onclick="criarContaPainel()">CRIAR CONTA</button>
         </div>
     </div>
 
@@ -511,12 +533,6 @@
             const resUsuarios = await fetch(`${URL_SERVIDOR}/usuarios`);
             dadosUsuarios = await resUsuarios.json();
 
-            if (dadosUsuarios.length > 0) {
-                document.getElementById('nome-admin').innerText = dadosUsuarios[0].nome;
-            } else {
-                document.getElementById('nome-admin').innerText = "Aguardando App...";
-            }
-
         } catch (erro) {
             console.error("Erro ao buscar dados:", erro);
         }
@@ -741,13 +757,48 @@
         }
     }
 
-    function sairConta() {
-        const toast = document.getElementById('notif-toast');
-        toast.querySelector('h4').innerText = "Saindo...";
-        toast.querySelector('p').innerText = "Redirecionando para a tela de login.";
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3000);
+    // =====================================================
+    // CONTA DO PAINEL (nome que aparece no topo)
+    // =====================================================
+    const CHAVE_PAINEL = 'myAppPainelUsuario';
+
+    function mostrarNomePainel(nome) {
+        document.getElementById('nome-admin').innerText = nome;
+        document.getElementById('tela-conta-painel').style.display = 'none';
     }
+
+    function abrirTelaConta() {
+        document.getElementById('conta-painel-nome').value = '';
+        document.getElementById('conta-painel-erro').innerText = '';
+        document.getElementById('nome-admin').innerText = '';
+        document.getElementById('tela-conta-painel').style.display = 'flex';
+        setTimeout(() => document.getElementById('conta-painel-nome').focus(), 50);
+    }
+
+    function criarContaPainel() {
+        const nome = document.getElementById('conta-painel-nome').value.trim();
+        if (!nome) {
+            document.getElementById('conta-painel-erro').innerText = 'Digite um nome de usuário!';
+            return;
+        }
+        try { localStorage.setItem(CHAVE_PAINEL, nome); } catch (e) {}
+        mostrarNomePainel(nome);
+    }
+
+    function iniciarContaPainel() {
+        let nome = null;
+        try { nome = localStorage.getItem(CHAVE_PAINEL); } catch (e) {}
+        if (nome) mostrarNomePainel(nome);
+        else abrirTelaConta();
+    }
+
+    function sairConta() {
+        if (!confirm("Sair da conta do painel?")) return;
+        try { localStorage.removeItem(CHAVE_PAINEL); } catch (e) {}
+        abrirTelaConta();
+    }
+
+    iniciarContaPainel();
 
     carregarDadosPainel().then(() => {
         renderEstoquePainel();

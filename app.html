@@ -192,30 +192,7 @@
 
 <div class="app-container">
 
-    <div id="tela-login" class="screen active">
-        <div class="login-header">
-            <h1>LOGGIN</h1>
-            <p>cria uma conta ou entra com uma sua</p>
-        </div>
-        <div style="padding: 0 20px;">
-            <input type="email" id="email" class="input-field" placeholder="digite seu gmail" style="margin-bottom: 15px;">
-            <input type="password" id="senha" class="input-field" placeholder="DIGITE SUA SENHA">
-        </div>
-        <button class="btn-green" onclick="irParaVerificacao()">CRIAR</button>
-    </div>
-
-    <div id="tela-verificacao" class="screen">
-        <div class="login-header">
-            <h1>VERIFICAÇÃO</h1>
-            <p>Insira o código de 4 dígitos</p>
-        </div>
-        <div style="padding: 0 20px;">
-            <input type="text" id="codigo" class="input-field" placeholder="0000" maxlength="4" style="font-size: 24px; letter-spacing: 5px;">
-        </div>
-        <button class="btn-green" onclick="irParaCriacaoUsuario()">CONCLUIR</button>
-    </div>
-
-    <div id="tela-criacao" class="screen">
+    <div id="tela-criacao" class="screen active">
         <div class="login-header">
             <h1>CRIAR USUÁRIO</h1>
             <p>Defina seu nome e foto</p>
@@ -547,7 +524,7 @@
         document.getElementById(telaId).classList.add('active');
 
         const barraInferior = document.getElementById('bottom-nav-bar');
-        if (['tela-login', 'tela-verificacao', 'tela-criacao'].includes(telaId)) {
+        if (telaId === 'tela-criacao') {
             barraInferior.style.display = 'none';
         } else {
             barraInferior.style.display = 'flex';
@@ -572,8 +549,6 @@
         setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
-    function irParaVerificacao() { if(document.getElementById('email').value) abrirTela('tela-verificacao'); }
-    function irParaCriacaoUsuario() { if(document.getElementById('codigo').value.length === 4) abrirTela('tela-criacao'); }
     
     function previewImage(event, previewId) {
         const reader = new FileReader();

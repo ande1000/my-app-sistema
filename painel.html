@@ -86,6 +86,27 @@
         .msg-bubble { padding: 10px 15px; border-radius: 15px; font-size: 14px; max-width: 70%; word-wrap: break-word; }
         .msg-bubble.sent { background-color: #ff0000; color: #fff; align-self: flex-end; border-bottom-right-radius: 0; }
         .msg-bubble.received { background-color: #00ff00; color: #000; align-self: flex-start; border-bottom-left-radius: 0; }
+        .chat-layout { display: flex; gap: 16px; flex: 1; min-height: 0; }
+        .chat-lista-col { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; min-height: 0; }
+        .chat-direita { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+        .chat-direita .chat-area { flex: 1; height: auto; min-height: 0; }
+        .conversas-lista { flex: 1; min-height: 0; border: 3px solid #000; border-radius: 8px; padding: 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; background: #bdbdbd; }
+        .conversas-vazio { font-size: 13px; color: #333; padding: 10px; text-align: center; }
+        .conversa-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 12px; cursor: pointer; border: 2px solid transparent; }
+        .conversa-item:hover { background: rgba(255,255,255,0.5); }
+        .conversa-item.ativa { background: #fff; border-color: #000; }
+        .conversa-avatar { width: 44px; height: 44px; border-radius: 50%; background: #fff; border: 2px solid #000; object-fit: cover; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; flex-shrink: 0; overflow: hidden; }
+        .conversa-info { min-width: 0; flex: 1; }
+        .conversa-nome { font-weight: 900; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #000; }
+        .conversa-previa { font-size: 12px; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .conversa-badge { background: #00cc00; color: #fff; border-radius: 12px; min-width: 22px; height: 22px; padding: 0 6px; font-size: 12px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .chat-vazio { margin: auto; color: #777; font-size: 15px; font-weight: bold; text-align: center; }
+        .chat-input-panel input:disabled { background: #eee; cursor: not-allowed; }
+        .chat-input-panel button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .cfg-chat-op { display: block; width: 100%; margin-bottom: 12px; padding: 12px; border: 3px solid #000; border-radius: 20px; background: #fff; font-size: 16px; font-weight: 900; cursor: pointer; color: #000; }
+        .cfg-chat-op:active { transform: scale(0.97); }
+        .cfg-lista-usuarios { max-height: 260px; overflow-y: auto; text-align: left; border: 2px solid #000; border-radius: 12px; padding: 6px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 4px; }
+        @media (max-width: 760px) { .chat-lista-col { width: 150px; } .conversa-previa { display: none; } }
         .chat-input-panel { display: flex; gap: 10px; }
         .chat-input-panel input { flex: 1; padding: 12px; border: 2px solid #000; border-radius: 8px; outline: none; font-size: 14px; }
         .chat-input-panel button { padding: 0 25px; background: #000; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
@@ -258,17 +279,25 @@
             </div>
 
             <div id="aba-chat" class="content-screen">
-                <div class="chat-topo">
-                    <div class="content-title">My App Chat</div>
-                    <button class="btn-engrenagem" title="Configurações do chat" onclick="abrirConfigChat()">
+                <div class="chat-layout">
+                    <div class="chat-lista-col">
+                        <div class="content-title">Conversas</div>
+                        <div class="conversas-lista" id="conversas-lista"></div>
+                    </div>
+                    <div class="chat-direita">
+                        <div class="chat-topo">
+                            <div class="content-title" id="chat-titulo">Chat</div>
+                            <button class="btn-engrenagem" title="Configurações do chat" onclick="abrirConfigChat()">
                         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                     </button>
-                </div>
-                <div class="chat-area">
-                    <div class="chat-messages" id="chat-painel-mensagens"></div>
-                    <div class="chat-input-panel">
-                        <input type="text" id="chat-painel-input" placeholder="Digite sua resposta...">
-                        <button onclick="enviarMsgPainel()">Enviar</button>
+                        </div>
+                        <div class="chat-area">
+                            <div class="chat-messages" id="chat-painel-mensagens"><div class="chat-vazio">Escolha uma conversa ao lado</div></div>
+                            <div class="chat-input-panel">
+                                <input type="text" id="chat-painel-input" placeholder="Selecione uma conversa" disabled onkeydown="if(event.key === 'Enter') enviarMsgPainel()">
+                                <button id="chat-painel-enviar" onclick="enviarMsgPainel()" disabled>Enviar</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -299,14 +328,33 @@
 
     <div class="modal-overlay" id="modal-config-chat" onclick="if(event.target === this) fecharConfigChat()">
         <div class="modal-confirm">
-            <h3>Configurações do chat</h3>
-            <label class="check-limpar">
-                <input type="checkbox" id="check-limpar-historico" onchange="atualizarBotaoLimpar()">
-                Limpar o histórico
-            </label>
-            <div class="btns">
-                <button class="btn-cancel" onclick="fecharConfigChat()">Cancelar</button>
-                <button class="btn-danger" id="btn-apagar-historico" onclick="apagarHistoricoChat()" disabled>Apagar</button>
+            <h3 id="cfg-chat-titulo">Configurações do chat</h3>
+
+            <div id="cfg-chat-menu">
+                <button class="cfg-chat-op" onclick="abrirCfgChat('limpar')">Limpar o histórico</button>
+                <button class="cfg-chat-op" onclick="abrirCfgChat('usuarios')">Apagar o usuário</button>
+                <div class="btns">
+                    <button class="btn-cancel" onclick="fecharConfigChat()">Fechar</button>
+                </div>
+            </div>
+
+            <div id="cfg-chat-limpar" style="display:none;">
+                <label class="check-limpar">
+                    <input type="checkbox" id="check-limpar-historico" onchange="atualizarBotaoLimpar()">
+                    Limpar todas as conversas
+                </label>
+                <div class="btns">
+                    <button class="btn-cancel" onclick="mostrarCfgChat('menu')">Voltar</button>
+                    <button class="btn-danger" id="btn-apagar-historico" onclick="apagarHistoricoChat()" disabled>Apagar</button>
+                </div>
+            </div>
+
+            <div id="cfg-chat-usuarios" style="display:none;">
+                <div class="cfg-lista-usuarios" id="cfg-lista-usuarios"></div>
+                <div class="btns">
+                    <button class="btn-cancel" onclick="mostrarCfgChat('menu')">Voltar</button>
+                    <button class="btn-danger" id="btn-apagar-usuario" onclick="apagarUsuarioChat()" disabled>Apagar</button>
+                </div>
             </div>
         </div>
     </div>
@@ -447,37 +495,210 @@
 
     const socket = io(URL_SERVIDOR);
 
+    // =====================================================
+    // CONVERSAS (uma por usuário do app, como no WhatsApp)
+    // =====================================================
+    let conversas = [];          // lista que vem do servidor
+    let conversaAtual = null;    // nome do usuário que está aberto
+    let usuarioParaApagar = null;
+    let cfgChatView = 'menu';
+    const naoLidas = {};         // nome -> mensagens ainda não lidas
+
+    function atualizarBadgeChat() {
+        const total = Object.values(naoLidas).reduce((a, b) => a + b, 0);
+        const badge = document.getElementById('chat-badge');
+        badge.style.display = total > 0 ? 'flex' : 'none';
+        badge.innerText = String(total);
+    }
+
+    function criarAvatar(nome, foto, classe) {
+        const letra = () => {
+            const d = document.createElement('div');
+            d.className = classe;
+            d.textContent = String(nome || '?').trim().charAt(0).toUpperCase();
+            return d;
+        };
+        if (!foto) return letra();
+        const img = document.createElement('img');
+        img.className = classe;
+        img.alt = '';
+        img.src = foto;
+        img.onerror = () => img.replaceWith(letra());
+        return img;
+    }
+
+    function linhaConversa(c, ativa, aoClicar) {
+        const item = document.createElement('div');
+        item.className = 'conversa-item' + (ativa ? ' ativa' : '');
+        item.onclick = aoClicar;
+        item.appendChild(criarAvatar(c.usuario, c.foto, 'conversa-avatar'));
+        const info = document.createElement('div');
+        info.className = 'conversa-info';
+        const nome = document.createElement('div');
+        nome.className = 'conversa-nome';
+        nome.textContent = c.usuario;
+        const previa = document.createElement('div');
+        previa.className = 'conversa-previa';
+        previa.textContent = (c.ultimoRemetente === 'painel' ? 'Você: ' : '') + (c.ultimaMensagem || '');
+        info.appendChild(nome);
+        info.appendChild(previa);
+        item.appendChild(info);
+        return item;
+    }
+
+    function renderConversas() {
+        const box = document.getElementById('conversas-lista');
+        box.innerHTML = '';
+        if (conversas.length === 0) {
+            const vazio = document.createElement('div');
+            vazio.className = 'conversas-vazio';
+            vazio.textContent = 'Nenhuma conversa ainda. Quando alguém mandar mensagem no app, aparece aqui.';
+            box.appendChild(vazio);
+            return;
+        }
+        conversas.forEach(c => {
+            const item = linhaConversa(c, c.usuario === conversaAtual, () => abrirConversa(c.usuario));
+            if (naoLidas[c.usuario] > 0) {
+                const b = document.createElement('div');
+                b.className = 'conversa-badge';
+                b.textContent = String(naoLidas[c.usuario]);
+                item.appendChild(b);
+            }
+            box.appendChild(item);
+        });
+    }
+
+    async function carregarConversas() {
+        try {
+            const r = await fetch(`${URL_SERVIDOR}/conversas`);
+            const j = await r.json();
+            if (!Array.isArray(j)) return;
+            conversas = j;
+            renderConversas();
+            if (cfgChatView === 'usuarios') renderListaApagarUsuario();
+        } catch (erro) {}
+    }
+
+    function resetarChatDireita() {
+        document.getElementById('chat-titulo').textContent = 'Chat';
+        const input = document.getElementById('chat-painel-input');
+        input.value = '';
+        input.disabled = true;
+        input.placeholder = 'Selecione uma conversa';
+        document.getElementById('chat-painel-enviar').disabled = true;
+        document.getElementById('chat-painel-mensagens').innerHTML = '<div class="chat-vazio">Escolha uma conversa ao lado</div>';
+    }
+
+    async function abrirConversa(nome) {
+        conversaAtual = nome;
+        naoLidas[nome] = 0;
+        atualizarBadgeChat();
+        document.getElementById('chat-titulo').textContent = 'Chat · ' + nome;
+        const input = document.getElementById('chat-painel-input');
+        input.disabled = false;
+        input.placeholder = 'Digite sua resposta...';
+        document.getElementById('chat-painel-enviar').disabled = false;
+        document.getElementById('chat-painel-mensagens').innerHTML = '';
+        renderConversas();
+        try {
+            const r = await fetch(`${URL_SERVIDOR}/mensagens?usuario=${encodeURIComponent(nome)}`);
+            const msgs = await r.json();
+            if (conversaAtual !== nome || !Array.isArray(msgs)) return;
+            const chat = document.getElementById('chat-painel-mensagens');
+            chat.innerHTML = '';
+            msgs.forEach(m => adicionarMensagemNoPainel(m));
+        } catch (erro) {}
+        input.focus();
+    }
+
+    function adicionarMensagemNoPainel(msg) {
+        const chat = document.getElementById('chat-painel-mensagens');
+        const div = document.createElement('div');
+        div.className = msg.remetente === 'painel' ? 'msg-bubble sent' : 'msg-bubble received';
+        div.textContent = msg.texto;
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function enviarMsgPainel() {
+        const input = document.getElementById('chat-painel-input');
+        if (!conversaAtual || input.value.trim() === '') return;
+        socket.emit('enviarMensagem', { remetente: 'painel', usuario: conversaAtual, texto: input.value });
+        input.value = '';
+    }
+
     socket.on('connect', () => {
-        carregarMensagensPainel();
+        socket.emit('entrarPainel'); // passa a receber as mensagens de todos os usuários
+        carregarConversas();
+        if (conversaAtual) abrirConversa(conversaAtual);
     });
 
     socket.on('receberMensagem', (msg) => {
-        adicionarMensagemNoPainel(msg);
-        
+        const ehDaAberta = !!msg.usuario && msg.usuario === conversaAtual;
+        if (ehDaAberta) adicionarMensagemNoPainel(msg);
+
         if (msg.remetente === 'app') {
-            if (abaAtual !== 'chat') {
-                const badge = document.getElementById('chat-badge');
-                badge.style.display = 'flex';
-                badge.innerText = '1';
+            const lendoAgora = ehDaAberta && abaAtual === 'chat';
+            if (msg.usuario && !lendoAgora) {
+                naoLidas[msg.usuario] = (naoLidas[msg.usuario] || 0) + 1;
+                atualizarBadgeChat();
             }
-            notificar('Nova mensagem', msg.texto, '💬', 'msg');
+            notificar('Nova mensagem', (msg.usuario ? msg.usuario + ': ' : '') + msg.texto, '💬', 'msg');
         }
+        carregarConversas();
+    });
+
+    socket.on('conversaApagada', (dados) => {
+        const nome = dados && dados.usuario;
+        delete naoLidas[nome];
+        if (conversaAtual === nome) { conversaAtual = null; resetarChatDireita(); }
+        atualizarBadgeChat();
+        carregarConversas();
     });
 
     socket.on('historicoLimpo', () => {
-        document.getElementById('chat-painel-mensagens').innerHTML = '';
-        document.getElementById('chat-badge').style.display = 'none';
+        Object.keys(naoLidas).forEach(k => delete naoLidas[k]);
+        conversas = [];
+        conversaAtual = null;
+        resetarChatDireita();
+        renderConversas();
+        atualizarBadgeChat();
     });
 
-    // ===== CONFIGURAÇÕES DO CHAT (limpar histórico) =====
+    // ===== CONFIGURAÇÕES DO CHAT (limpar histórico / apagar usuário) =====
+    const TITULOS_CFG_CHAT = { menu: 'Configurações do chat', limpar: 'Limpar o histórico', usuarios: 'Apagar o usuário' };
+
+    function mostrarCfgChat(view) {
+        cfgChatView = view;
+        ['menu', 'limpar', 'usuarios'].forEach(v => {
+            document.getElementById('cfg-chat-' + v).style.display = (v === view) ? 'block' : 'none';
+        });
+        document.getElementById('cfg-chat-titulo').textContent = TITULOS_CFG_CHAT[view];
+    }
+
     function abrirConfigChat() {
-        document.getElementById('check-limpar-historico').checked = false;
-        atualizarBotaoLimpar();
+        mostrarCfgChat('menu');
         document.getElementById('modal-config-chat').classList.add('active');
     }
 
     function fecharConfigChat() {
+        cfgChatView = 'menu';
         document.getElementById('modal-config-chat').classList.remove('active');
+    }
+
+    function abrirCfgChat(view) {
+        if (view === 'limpar') {
+            document.getElementById('check-limpar-historico').checked = false;
+            atualizarBotaoLimpar();
+        }
+        if (view === 'usuarios') {
+            usuarioParaApagar = null;
+            mostrarCfgChat('usuarios');
+            renderListaApagarUsuario();
+            carregarConversas();
+            return;
+        }
+        mostrarCfgChat(view);
     }
 
     function atualizarBotaoLimpar() {
@@ -491,7 +712,6 @@
         try {
             const res = await fetch(`${URL_SERVIDOR}/mensagens`, { method: 'DELETE' });
             if (res.ok) {
-                document.getElementById('chat-painel-mensagens').innerHTML = '';
                 fecharConfigChat();
                 notificar('Chat', 'Histórico apagado com sucesso', '🗑️', '', true);
             } else {
@@ -504,31 +724,42 @@
         }
     }
 
-    async function carregarMensagensPainel() {
-        try {
-            const res = await fetch(`${URL_SERVIDOR}/mensagens`);
-            const msgs = await res.json();
-            const chat = document.getElementById('chat-painel-mensagens');
-            chat.innerHTML = ''; 
-            msgs.forEach(msg => adicionarMensagemNoPainel(msg));
-        } catch(erro) {}
-    }
-
-    function adicionarMensagemNoPainel(msg) {
-        const chat = document.getElementById('chat-painel-mensagens');
-        const div = document.createElement('div');
-        div.className = msg.remetente === 'painel' ? 'msg-bubble sent' : 'msg-bubble received';
-        div.innerText = msg.texto;
-        chat.appendChild(div);
-        chat.scrollTop = chat.scrollHeight;
-    }
-
-    function enviarMsgPainel() {
-        const input = document.getElementById('chat-painel-input');
-        if (input.value.trim() !== "") {
-            socket.emit('enviarMensagem', { remetente: 'painel', texto: input.value });
-            input.value = '';
+    function renderListaApagarUsuario() {
+        const box = document.getElementById('cfg-lista-usuarios');
+        box.innerHTML = '';
+        if (conversas.length === 0) {
+            const vazio = document.createElement('div');
+            vazio.className = 'conversas-vazio';
+            vazio.textContent = 'Nenhum usuário com conversa ainda.';
+            box.appendChild(vazio);
         }
+        conversas.forEach(c => {
+            box.appendChild(linhaConversa(c, c.usuario === usuarioParaApagar, () => {
+                usuarioParaApagar = c.usuario;
+                renderListaApagarUsuario();
+            }));
+        });
+        document.getElementById('btn-apagar-usuario').disabled = !usuarioParaApagar;
+    }
+
+    function apagarUsuarioChat() {
+        const nome = usuarioParaApagar;
+        if (!nome) return;
+        pedirConfirmacao('Apagar a conversa de "' + nome + '"? As mensagens serão apagadas.', 'Apagar', async () => {
+            try {
+                const r = await fetch(`${URL_SERVIDOR}/conversas/${encodeURIComponent(nome)}`, { method: 'DELETE' });
+                if (!r.ok) { avisoErro("O servidor não conseguiu apagar a conversa."); return; }
+                delete naoLidas[nome];
+                if (conversaAtual === nome) { conversaAtual = null; resetarChatDireita(); }
+                usuarioParaApagar = null;
+                fecharConfigChat();
+                await carregarConversas();
+                atualizarBadgeChat();
+                notificar('Chat', 'Conversa de ' + nome + ' apagada', '🗑️', '', true);
+            } catch (erro) {
+                avisoErro("Erro de conexão ao apagar a conversa.");
+            }
+        });
     }
 
     // Só faz uma nova consulta quando a anterior terminou (antes, as consultas se acumulavam)
@@ -588,7 +819,8 @@
         }
 
         if (aba === 'chat') {
-            document.getElementById('chat-badge').style.display = 'none';
+            atualizarBadgeChat();
+            carregarConversas();
         }
 
         carregarDadosPainel().then(() => {

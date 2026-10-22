@@ -493,21 +493,29 @@
     let idProdutoTemporario = null; 
 
     const socket = io(URL_SERVIDOR);
-    socket.on('connect', () => { carregarMensagensAntigas(); });
+    socket.on('connect', () => {
+        if (usuarioAtual) socket.emit('entrarUsuario', usuarioAtual.nome); // (re)entra na sala da própria conversa
+        carregarMensagensAntigas();
+    });
     socket.on('receberMensagem', (msg) => { adicionarMensagemNaTela(msg); });
     socket.on('historicoLimpo', () => { document.getElementById('chat-mensagens').innerHTML = ''; });
+    socket.on('conversaApagada', () => { document.getElementById('chat-mensagens').innerHTML = ''; });
 
     async function carregarMensagensAntigas() {
         try {
-            const res = await fetch(`${URL_SERVIDOR}/mensagens`);
-            const msgs = await res.json();
             const chat = document.getElementById('chat-mensagens');
-            chat.innerHTML = ''; 
+            chat.innerHTML = '';
+            if (!usuarioAtual) return;
+            const res = await fetch(`${URL_SERVIDOR}/mensagens?usuario=${encodeURIComponent(usuarioAtual.nome)}`);
+            const msgs = await res.json();
+            if (!Array.isArray(msgs)) return;
+            chat.innerHTML = '';
             msgs.forEach(msg => adicionarMensagemNaTela(msg));
         } catch(erro) {}
     }
 
     function adicionarMensagemNaTela(msg) {
+        if (!usuarioAtual || (msg.usuario && msg.usuario !== usuarioAtual.nome)) return; // só a conversa deste usuário
         const chat = document.getElementById('chat-mensagens');
         const div = document.createElement('div');
         div.className = msg.remetente === 'app' ? 'chat-bubble sent' : 'chat-bubble received';
@@ -518,8 +526,8 @@
 
     function enviarMensagem() {
         const input = document.getElementById('chat-input');
-        if (input.value.trim() !== "") {
-            socket.emit('enviarMensagem', { remetente: 'app', texto: input.value });
+        if (input.value.trim() !== "" && usuarioAtual) {
+            socket.emit('enviarMensagem', { remetente: 'app', usuario: usuarioAtual.nome, texto: input.value });
             input.value = '';
         }
     }
@@ -626,6 +634,8 @@
         document.getElementById('main-user-name').innerText = nome;
         document.getElementById('main-photo').innerHTML = foto ? `<img src="${foto}">` : '';
         lembrarUsuario(nome, foto);
+        socket.emit('entrarUsuario', nome);
+        carregarMensagensAntigas();
         abrirTela('tela-principal');
         carregarDados();
     }
@@ -684,6 +694,8 @@
 
     function confirmarSairDaConta() {
         fecharModal('modal-sair-conta');
+        if (usuarioAtual) socket.emit('sairUsuario', usuarioAtual.nome);
+        document.getElementById('chat-mensagens').innerHTML = '';
         try { localStorage.removeItem(CHAVE_USUARIO); } catch (e) {}
         usuarioAtual = null;
         window.fotoUsuario = null;
@@ -952,7 +964,10 @@
         const nome = document.getElementById('cfg-input-perfil').value.trim();
         if (!nome) { mostrarToast("Digite um nome!", true); return; }
         document.getElementById('main-user-name').innerText = nome;
+        if (usuarioAtual && usuarioAtual.nome !== nome) socket.emit('sairUsuario', usuarioAtual.nome);
         usuarioAtual = { nome: nome, foto: window.fotoUsuario || null };
+        socket.emit('entrarUsuario', nome);
+        carregarMensagensAntigas();
         lembrarUsuario(nome, window.fotoUsuario || null);
         mostrarViewConfig('cfg-menu', 'configuração');
         mostrarToast("Perfil salvo!");

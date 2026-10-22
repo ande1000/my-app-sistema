@@ -58,13 +58,13 @@ const Saida = mongoose.model('Saida', new mongoose.Schema({
     nome: String, qtd: String, data: String, unidade: String, obs: String
 }));
 const Mensagem = mongoose.model('Mensagem', new mongoose.Schema({
-    remetente: String, texto: String, dataHora: { type: Date, default: Date.now }
+    remetente: String, usuario: String, texto: String, dataHora: { type: Date, default: Date.now }
 }));
 const ListaCompras = mongoose.model('ListaCompras', new mongoose.Schema({
     item: String, obs: String
 }));
 const Usuario = mongoose.model('Usuario', new mongoose.Schema({
-    nome: String, foto: String, ultimoAcesso: { type: Date, default: Date.now }
+    nome: String, foto: String, fotoVersao: Number, ultimoAcesso: { type: Date, default: Date.now }
 }));
 
 // Mostra nos logs cada requisição que chega (ajuda a diagnosticar)
@@ -165,9 +165,49 @@ app.get('/saidas', rota(async (req, res) => res.json(await Saida.find())));
 app.post('/saidas', rota(async (req, res) => { const nova = new Saida(req.body); await nova.save(); res.json(nova); }));
 app.delete('/saidas/:id', rota(async (req, res) => { await Saida.findByIdAndDelete(req.params.id); res.json({ mensagem: "Apagado!" }); }));
 
-// MENSAGENS
-app.get('/mensagens', rota(async (req, res) => res.json(await Mensagem.find().sort({ dataHora: 1 }))));
-// Apaga todo o histórico do chat e avisa o app e o painel em tempo real
+// MENSAGENS / CONVERSAS
+// Cada mensagem pertence à conversa de um usuário do app (campo "usuario").
+app.get('/mensagens', rota(async (req, res) => {
+    const filtro = req.query.usuario ? { usuario: String(req.query.usuario) } : {};
+    res.json(await Mensagem.find(filtro).sort({ dataHora: 1 }).lean());
+}));
+
+// Lista de conversas do painel: quem já mandou mensagem, com a última mensagem e a foto
+app.get('/conversas', rota(async (req, res) => {
+    const grupos = await Mensagem.aggregate([
+        { $match: { usuario: { $nin: [null, ''] } } },
+        { $sort: { dataHora: 1 } },
+        { $group: { _id: '$usuario', ultimaMensagem: { $last: '$texto' }, ultimoRemetente: { $last: '$remetente' }, ultimaData: { $last: '$dataHora' }, total: { $sum: 1 } } },
+        { $sort: { ultimaData: -1 } }
+    ]);
+    const nomes = grupos.map(g => g._id);
+    const donos = nomes.length ? await Usuario.aggregate([
+        { $match: { nome: { $in: nomes } } },
+        { $project: { nome: 1, fotoVersao: 1, temFoto: { $gt: [{ $strLenCP: { $ifNull: ['$foto', ''] } }, 0] } } }
+    ]) : [];
+    const base = baseUrl(req);
+    res.json(grupos.map(g => {
+        const dono = donos.find(u => u.nome === g._id);
+        return {
+            usuario: g._id,
+            ultimaMensagem: g.ultimaMensagem,
+            ultimoRemetente: g.ultimoRemetente,
+            ultimaData: g.ultimaData,
+            total: g.total,
+            foto: dono && dono.temFoto ? `${base}/usuarios/${dono._id}/foto?v=${dono.fotoVersao || 0}` : null
+        };
+    }));
+}));
+
+// Apaga a conversa de um usuário (as mensagens dele)
+app.delete('/conversas/:nome', rota(async (req, res) => {
+    const nome = String(req.params.nome);
+    await Mensagem.deleteMany({ usuario: nome });
+    io.to('u:' + nome).to('painel').emit('conversaApagada', { usuario: nome });
+    res.json({ mensagem: "Conversa apagada!" });
+}));
+
+// Apaga todo o histórico do chat (todas as conversas)
 app.delete('/mensagens', rota(async (req, res) => {
     await Mensagem.deleteMany({});
     io.emit('historicoLimpo');
@@ -181,16 +221,37 @@ app.delete('/lista/:id', rota(async (req, res) => { await ListaCompras.findByIdA
 
 // USUÁRIOS
 app.get('/usuarios', rota(async (req, res) => {
-    // Usuários que acessaram nos últimos 5 minutos
+    // Usuários que acessaram nos últimos 5 minutos (foto enviada como link, não como arquivo pesado)
     const cincoMinAtras = new Date(Date.now() - 5 * 60000);
-    res.json(await Usuario.find({ ultimoAcesso: { $gte: cincoMinAtras } }));
+    const lista = await Usuario.aggregate([
+        { $match: { ultimoAcesso: { $gte: cincoMinAtras } } },
+        { $project: { nome: 1, ultimoAcesso: 1, fotoVersao: 1, temFoto: { $gt: [{ $strLenCP: { $ifNull: ['$foto', ''] } }, 0] } } }
+    ]);
+    const base = baseUrl(req);
+    res.json(lista.map(u => {
+        const { temFoto, fotoVersao, ...resto } = u;
+        return { ...resto, foto: temFoto ? `${base}/usuarios/${u._id}/foto?v=${fotoVersao || 0}` : null };
+    }));
 }));
+
+app.get('/usuarios/:id/foto', async (req, res) => {
+    try {
+        const u = await Usuario.findById(req.params.id).select('foto').lean();
+        if (!u || !ehFotoValida(u.foto)) return res.status(404).end();
+        const i = u.foto.indexOf(',');
+        const mime = (u.foto.slice(5, i).split(';')[0]) || 'image/jpeg';
+        res.set({ 'Content-Type': mime, 'Cache-Control': 'public, max-age=31536000, immutable' });
+        res.send(Buffer.from(u.foto.slice(i + 1), 'base64'));
+    } catch (erro) {
+        res.status(500).end();
+    }
+});
 
 app.post('/usuarios', rota(async (req, res) => {
     const nome = String(req.body.nome || '').trim();
     if (!nome) return res.status(400).json({ erro: 'Nome obrigatório' });
     const atualiza = { ultimoAcesso: Date.now() };
-    if (req.body.foto) atualiza.foto = req.body.foto; // sem foto nova, mantém a que já está salva
+    if (req.body.foto) { atualiza.foto = req.body.foto; atualiza.fotoVersao = Date.now(); } // sem foto nova, mantém a que já está salva
     const usuario = await Usuario.findOneAndUpdate({ nome }, atualiza, { upsert: true, new: true });
     res.json(usuario);
 }));
@@ -205,11 +266,23 @@ app.delete('/usuarios/:id', rota(async (req, res) => {
 // CHAT (SOCKET)
 // =====================================================
 io.on('connection', (socket) => {
+    // O app entra na sala do próprio usuário; o painel entra na sala "painel".
+    socket.on('entrarUsuario', (nome) => { if (typeof nome === 'string' && nome.trim()) socket.join('u:' + nome.trim()); });
+    socket.on('sairUsuario', (nome) => { if (typeof nome === 'string') socket.leave('u:' + nome.trim()); });
+    socket.on('entrarPainel', () => socket.join('painel'));
+
     socket.on('enviarMensagem', async (dados) => {
         try {
-            const novaMsg = new Mensagem({ remetente: dados.remetente, texto: dados.texto });
+            dados = dados || {};
+            const usuario = String(dados.usuario || '').trim();
+            const texto = String(dados.texto || '').slice(0, 2000);
+            if (!texto.trim()) return;
+            const remetente = dados.remetente === 'painel' ? 'painel' : 'app';
+            const novaMsg = new Mensagem({ remetente, usuario, texto });
             await novaMsg.save();
-            io.emit('receberMensagem', novaMsg);
+            // só o dono da conversa e o painel recebem
+            if (usuario) io.to('u:' + usuario).to('painel').emit('receberMensagem', novaMsg);
+            else io.to('painel').emit('receberMensagem', novaMsg);
         } catch (erro) {
             console.log("Erro ao salvar mensagem:", erro.message);
         }

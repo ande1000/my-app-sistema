@@ -15,7 +15,7 @@
         /* TOPO */
         .top-header { background-color: var(--header-purple); height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: relative; z-index: 10; }
         .user-profile-header { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 14px; color: #000; }
-        .app-logo { position: absolute; left: 50%; transform: translateX(-50%); font-size: 36px; font-weight: 900; color: #000; letter-spacing: 2px; }
+        .app-logo { position: absolute; left: 50%; transform: translateX(-50%); font-size: 50px; font-weight: 900; color: #000; letter-spacing: 3px; line-height: 1; }
         .header-actions { display: flex; align-items: center; gap: 20px; }
         .btn-notificacao { background-color: var(--icon-yellow); border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; }
         .btn-notificacao:active { transform: scale(0.95); }
@@ -23,6 +23,55 @@
         
         .chat-badge { position: absolute; top: -5px; right: -5px; background-color: #00ff00; color: #000; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: none; justify-content: center; align-items: center; }
         .btn-sair-conta { background: none; border: none; cursor: pointer; }
+        .icon-btn { background: none; border: none; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .icon-btn:active { transform: scale(0.9); }
+        .sino-status { position: absolute; left: -3px; bottom: -2px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #000; background: #ff0000; transition: background 0.2s, box-shadow 0.2s; }
+        .sino-status.ativo { background: #00ff44; box-shadow: 0 0 6px 2px rgba(0,255,68,0.8); }
+        .sino-status.inativo { background: #ff0000; box-shadow: 0 0 6px 2px rgba(255,0,0,0.7); }
+
+        /* LEDs piscando em sequência (verde, vermelho, azul) */
+        .leds { display: flex; align-items: center; gap: 16px; margin-left: 14px; }
+        .led { --atraso: 0s; position: relative; width: 20px; height: 20px; border-radius: 50%;
+               background: radial-gradient(circle at 38% 32%, var(--meio) 0%, var(--escura) 72%);
+               box-shadow: inset 0 -2px 3px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.25), 0 0 0 2px #262626, 0 0 0 3px rgba(255,255,255,0.28); }
+        .led-verde { --cor: #5dff8f; --meio: #14a748; --escura: #063a1a; }
+        .led-vermelho { --cor: #ff6b6b; --meio: #c41818; --escura: #3d0808; --atraso: 1s; }
+        .led-azul { --cor: #7ea4ff; --meio: #2147c9; --escura: #0a1640; --atraso: 2s; }
+        .led::before { content: ''; position: absolute; inset: 0; border-radius: 50%;
+               background: radial-gradient(circle at 40% 35%, #ffffff 0%, var(--cor) 38%, var(--meio) 85%);
+               opacity: 0; animation: ledPiscar 3s linear infinite; animation-delay: var(--atraso); }
+        .led::after { content: ''; position: absolute; top: 3px; left: 4px; width: 8px; height: 4px; border-radius: 50%;
+               background: rgba(255,255,255,0.6); filter: blur(0.6px); transform: rotate(-28deg); }
+        .led-glow { position: absolute; inset: -17px; border-radius: 50%; pointer-events: none; z-index: 1;
+               background: radial-gradient(circle, var(--cor) 0%, rgba(0,0,0,0) 62%); mix-blend-mode: screen; filter: blur(3px);
+               opacity: 0; animation: ledBrilho 3s linear infinite; animation-delay: var(--atraso); }
+        @keyframes ledPiscar {
+            0% { opacity: 0; } 1.5% { opacity: 1; } 6% { opacity: 1; } 7.5% { opacity: 0; }
+            11% { opacity: 0; } 12.5% { opacity: 1; } 17% { opacity: 1; } 18.5% { opacity: 0; }
+            22% { opacity: 0; } 23.5% { opacity: 1; } 28% { opacity: 1; } 29.5% { opacity: 0; }
+            100% { opacity: 0; }
+        }
+        @keyframes ledBrilho {
+            0% { opacity: 0; transform: scale(0.7); } 1.5% { opacity: 1; transform: scale(1.12); } 6% { opacity: 0.95; transform: scale(1); } 7.5% { opacity: 0; transform: scale(0.8); }
+            11% { opacity: 0; transform: scale(0.7); } 12.5% { opacity: 1; transform: scale(1.12); } 17% { opacity: 0.95; transform: scale(1); } 18.5% { opacity: 0; transform: scale(0.8); }
+            22% { opacity: 0; transform: scale(0.7); } 23.5% { opacity: 1; transform: scale(1.12); } 28% { opacity: 0.95; transform: scale(1); } 29.5% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 0; transform: scale(0.7); }
+        }
+        @media (prefers-reduced-motion: reduce) { .led::before, .led-glow { animation: none; } .led-verde::before { opacity: 0.9; } }
+        @media (max-width: 900px) { .app-logo { font-size: 34px; } .leds { gap: 12px; } }
+        @media (max-width: 640px) { .app-logo { display: none; } }
+
+        /* TELA DE CONFIGURAÇÃO DO PAINEL */
+        .cfgp-card { background: #fff; width: 92%; max-width: 340px; border-radius: 14px; border: 3px solid #000; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+        .cfgp-topo { background: var(--header-purple); height: 54px; position: relative; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; color: #000; padding: 0 50px; }
+        .cfgp-x { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; }
+        .cfgp-x svg { width: 26px; height: 26px; stroke: #ff1a1a; stroke-width: 5; stroke-linecap: round; fill: none; }
+        .cfgp-corpo { padding: 22px 18px 26px; text-align: center; }
+        .cfgp-btn { display: block; width: 92%; margin: 0 auto 14px; padding: 10px 8px; border: 4px solid #000; border-radius: 22px; background: #fff; font-weight: 900; font-size: 16px; color: #222; cursor: pointer; }
+        .cfgp-btn.grande { font-size: 24px; }
+        .cfgp-btn:active { transform: scale(0.97); }
+        .cfgp-texto { font-size: 15px; line-height: 1.55; color: #222; text-align: left; margin-bottom: 20px; }
+        .cfgp-texto b { font-weight: 900; }
 
         /* CORPO */
         .main-body { display: flex; flex: 1; overflow: hidden; }
@@ -159,23 +208,31 @@
 
     <div class="top-header">
         <div class="user-profile-header">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             <span id="nome-admin">nome do usuário</span>
+            <div class="leds" aria-hidden="true">
+                <span class="led led-verde"><i class="led-glow"></i></span>
+                <span class="led led-vermelho"><i class="led-glow"></i></span>
+                <span class="led led-azul"><i class="led-glow"></i></span>
+            </div>
         </div>
 
-        <div class="app-logo">MY APP SIST</div>
+        <div class="app-logo">MY APP</div>
 
         <div class="header-actions">
-            <button class="btn-notificacao" onclick="mostrarNotificacao()">notificações</button>
-            
-            <div class="chat-badge-container" onclick="abrirAba('chat')">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <button class="icon-btn" title="Configurações" onclick="abrirConfigPainel()">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="#e6e6e6" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path><circle cx="12" cy="12" r="3.2" fill="#000"></circle></svg>
+            </button>
+
+            <button class="icon-btn" id="btn-sino" title="Notificações" onclick="alternarNotificacoes()">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="#ffd400" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                <span class="sino-status ativo" id="sino-status"></span>
+            </button>
+
+            <div class="chat-badge-container" onclick="abrirAba('chat')" title="Chat">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="#ff2a2a" stroke="#000" stroke-width="1.6" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                 <div class="chat-badge" id="chat-badge">1</div>
             </div>
-
-            <button class="btn-sair-conta" title="Sair da Conta" onclick="sairConta()">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-            </button>
         </div>
     </div>
 
@@ -359,6 +416,25 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="modal-config-painel" onclick="if(event.target === this) fecharConfigPainel()">
+        <div class="cfgp-card">
+            <div class="cfgp-topo">
+                <button class="cfgp-x" onclick="fecharConfigPainel()" title="Fechar"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+                <span id="cfgp-titulo"></span>
+            </div>
+            <div class="cfgp-corpo">
+                <div id="cfgp-menu">
+                    <button class="cfgp-btn grande" onclick="mostrarCfgPainel('sobre')">SOBRE APP</button>
+                    <button class="cfgp-btn" onclick="sairConta()">SAIR DA CONTA</button>
+                </div>
+                <div id="cfgp-sobre" style="display:none;">
+                    <p class="cfgp-texto">Este sistema foi criado por <b>Anderson</b>. Ele pensava no trabalho e na CLT e, para facilitar o trabalho dele, criou este sistema para ser útil para ele e para os colegas de trabalho.</p>
+                    <button class="cfgp-btn" onclick="mostrarCfgPainel('menu')">Voltar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="modal-pergunta" onclick="if(event.target === this) fecharPergunta()">
         <div class="modal-confirm">
             <h3 id="pergunta-titulo">Tem certeza?</h3>
@@ -484,9 +560,9 @@
         if (snapshotProdutos !== null) { // na primeira carga não avisa (itens já existentes)
             lista.forEach(p => {
                 if (!snapshotProdutos.has(p._id)) {
-                    notificar('Novo item adicionado', p.nome, '📦', '');
+                    alertaNovidade('Novo item adicionado', p.nome, '📦', '');
                 } else if (p.status === 'acabou' && snapshotProdutos.get(p._id) !== 'acabou') {
-                    notificar('Item acabou', p.nome, '🚫', 'acabou');
+                    alertaNovidade('Item acabou', p.nome, '🚫', 'acabou');
                 }
             });
         }
@@ -643,7 +719,7 @@
                 naoLidas[msg.usuario] = (naoLidas[msg.usuario] || 0) + 1;
                 atualizarBadgeChat();
             }
-            notificar('Nova mensagem', (msg.usuario ? msg.usuario + ': ' : '') + msg.texto, '💬', 'msg');
+            alertaNovidade('Nova mensagem', (msg.usuario ? msg.usuario + ': ' : '') + msg.texto, '💬', 'msg');
         }
         carregarConversas();
     });
@@ -1092,15 +1168,52 @@
 
     definirPeriodo(6); // começa com os últimos 7 dias
 
-    function mostrarNotificacao() {
-        // Botão "notificações": ativa o som e mostra um exemplo
-        prepararAudio();
-        ultimoSom = 0;
-        notificar('Notificações ativadas', 'Você será avisado de novidades!', '🔔', '');
+    // ===== SINO: liga e desliga as notificações (bolinha verde = ativas, vermelha = desativadas) =====
+    const CHAVE_NOTIF = 'myAppPainelNotificacoes';
+    let notificacoesAtivas = true;
+    try { notificacoesAtivas = localStorage.getItem(CHAVE_NOTIF) !== 'off'; } catch (e) {}
+
+    function atualizarSino() {
+        const bolinha = document.getElementById('sino-status');
+        bolinha.classList.toggle('ativo', notificacoesAtivas);
+        bolinha.classList.toggle('inativo', !notificacoesAtivas);
+        document.getElementById('btn-sino').title = notificacoesAtivas ? 'Notificações ativadas (clique para desativar)' : 'Notificações desativadas (clique para ativar)';
     }
 
-    // ===== PERGUNTAS E AVISOS DENTRO DO PAINEL (sem pop-up do navegador) =====
-    let acaoConfirmada = null;
+    function alternarNotificacoes() {
+        notificacoesAtivas = !notificacoesAtivas;
+        try { localStorage.setItem(CHAVE_NOTIF, notificacoesAtivas ? 'on' : 'off'); } catch (e) {}
+        atualizarSino();
+        if (notificacoesAtivas) {
+            prepararAudio();
+            ultimoSom = 0;
+            notificar('Notificações ativadas', 'Você será avisado das novidades!', '🔔', '');
+        } else {
+            notificar('Notificações desativadas', 'Você não será mais avisado.', '🔕', 'acabou', true);
+        }
+    }
+
+    // Avisos de novidade (item novo, item acabou, mensagem): só aparecem com o sino ativado
+    function alertaNovidade(titulo, texto, icone, tipo) {
+        if (!notificacoesAtivas) return;
+        notificar(titulo, texto, icone, tipo);
+    }
+
+    // ===== TELA DE CONFIGURAÇÃO DO PAINEL =====
+    function mostrarCfgPainel(view) {
+        document.getElementById('cfgp-menu').style.display = (view === 'menu') ? 'block' : 'none';
+        document.getElementById('cfgp-sobre').style.display = (view === 'sobre') ? 'block' : 'none';
+        document.getElementById('cfgp-titulo').textContent = (view === 'sobre') ? 'Sobre o app' : '';
+    }
+
+    function abrirConfigPainel() {
+        mostrarCfgPainel('menu');
+        document.getElementById('modal-config-painel').classList.add('active');
+    }
+
+    function fecharConfigPainel() {
+        document.getElementById('modal-config-painel').classList.remove('active');
+    }
 
     function pedirConfirmacao(titulo, textoBotao, acao) {
         document.getElementById('pergunta-titulo').innerText = titulo;
@@ -1147,14 +1260,14 @@
     const CHAVE_PAINEL = 'myAppPainelUsuario';
 
     function mostrarNomePainel(nome) {
-        document.getElementById('nome-admin').innerText = nome;
+        document.getElementById('nome-admin').textContent = nome;
         document.getElementById('tela-conta-painel').style.display = 'none';
     }
 
     function abrirTelaConta() {
         document.getElementById('conta-painel-nome').value = '';
         document.getElementById('conta-painel-erro').innerText = '';
-        document.getElementById('nome-admin').innerText = '';
+        document.getElementById('nome-admin').textContent = '';
         document.getElementById('tela-conta-painel').style.display = 'flex';
         setTimeout(() => document.getElementById('conta-painel-nome').focus(), 50);
     }
@@ -1179,11 +1292,13 @@
     function sairConta() {
         pedirConfirmacao('Sair da conta do painel?', 'Sair', () => {
             try { localStorage.removeItem(CHAVE_PAINEL); } catch (e) {}
+            fecharConfigPainel();
             abrirTelaConta();
         });
     }
 
     iniciarContaPainel();
+    atualizarSino();
 
     carregarDadosPainel().then(() => {
         renderEstoquePainel();

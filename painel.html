@@ -62,6 +62,14 @@
         @media (max-width: 640px) { .app-logo { display: none; } }
 
         /* TELA DE CONFIGURAÇÃO DO PAINEL */
+        .titulo-linha { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; }
+        .titulo-linha .content-title { margin-bottom: 0; }
+        .btn-copy { background: #00d84f; color: #ff1a1a; font-weight: 900; font-size: 22px; font-style: italic; letter-spacing: 1px; border: 3px solid #fff; border-radius: 16px; padding: 4px 22px; cursor: pointer; box-shadow: 0 0 0 2px #000; transition: 0.2s; }
+        .btn-copy:active { transform: scale(0.94); }
+        .btn-exportar { background: #ff8a1f; color: #222; font-weight: 900; font-size: 22px; border: 3px solid #fff; border-radius: 22px; padding: 6px 30px; cursor: pointer; box-shadow: 0 0 0 2px #000; margin-left: auto; transition: 0.2s; }
+        .btn-exportar:active { transform: scale(0.94); }
+        .exp-resumo { white-space: pre-line; font-size: 15px; line-height: 1.6; text-align: left; margin-bottom: 20px; color: #222; }
+        .modal-confirm .btn-avancar { background: #00ff00; color: #000; }
         .cfgp-card { background: #fff; width: 92%; max-width: 340px; border-radius: 14px; border: 3px solid #000; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
         .cfgp-topo { background: var(--header-purple); height: 54px; position: relative; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; color: #000; padding: 0 50px; }
         .cfgp-x { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; }
@@ -161,11 +169,6 @@
         .chat-input-panel button { padding: 0 25px; background: #000; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
 
         /* NOTIFICAÇÃO */
-        .notification-toast { position: absolute; top: 80px; right: 20px; background-color: #fff; border-left: 6px solid #ff0000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); padding: 15px 20px; border-radius: 8px; display: flex; align-items: center; gap: 15px; transform: translateX(120%); transition: transform 0.4s ease-in-out; z-index: 1000; max-width: 350px; }
-        .notification-toast.show { transform: translateX(0); }
-        .notification-icon { font-size: 24px; }
-        .notification-text h4 { font-size: 14px; margin-bottom: 2px; }
-        .notification-text p { font-size: 12px; color: #555; }
 
         /* CONTA DO PAINEL */
         #tela-conta-painel { position: fixed; inset: 0; background: var(--header-purple); z-index: 5000; display: none; justify-content: center; align-items: center; padding: 20px; }
@@ -301,6 +304,7 @@
                         <input type="date" id="calc-fim" class="calc-data">
                     </div>
                     <button class="calc-btn" onclick="calcularSemanal()">CALCULAR RESUMO</button>
+                    <button class="btn-exportar" title="Exportar o resumo calculado" onclick="abrirExportar()">exportar</button>
                 </div>
                 <div class="calc-atalhos">
                     <button onclick="atalhoPeriodo(0)">Hoje</button>
@@ -320,7 +324,10 @@
             </div>
 
             <div id="aba-acabou" class="content-screen">
-                <div class="content-title">Itens Acabados</div>
+                <div class="titulo-linha">
+                    <div class="content-title">Itens Acabados</div>
+                    <button class="btn-copy" title="Copiar o nome de todos os itens" onclick="copiarAcabados()">copy</button>
+                </div>
                 <div class="grid-container" id="painel-acabou"></div>
             </div>
 
@@ -331,7 +338,10 @@
             </div>
 
             <div id="aba-lista_compras" class="content-screen">
-                <div class="content-title">Listas de Compras Recebidas</div>
+                <div class="titulo-linha">
+                    <div class="content-title">Listas de Compras Recebidas</div>
+                    <button class="btn-copy" title="Copiar todos os itens da lista" onclick="copiarListaCompras()">copy</button>
+                </div>
                 <div class="grid-container" id="painel-lista"></div>
             </div>
 
@@ -375,14 +385,6 @@
     <div id="notif-container"></div>
     <div id="aviso-som">🔇 Clique em qualquer lugar da tela para ativar o som das notificações</div>
 
-    <div class="notification-toast" id="notif-toast">
-        <div class="notification-icon">🔔</div>
-        <div class="notification-text">
-            <h4>Notificação do Sistema</h4>
-            <p>O App acaba de enviar uma nova atualização de estoque!</p>
-        </div>
-    </div>
-
     <div class="modal-overlay" id="modal-config-chat" onclick="if(event.target === this) fecharConfigChat()">
         <div class="modal-confirm">
             <h3 id="cfg-chat-titulo">Configurações do chat</h3>
@@ -411,6 +413,27 @@
                 <div class="btns">
                     <button class="btn-cancel" onclick="mostrarCfgChat('menu')">Voltar</button>
                     <button class="btn-danger" id="btn-apagar-usuario" onclick="apagarUsuarioChat()" disabled>Apagar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-exportar" onclick="if(event.target === this) fecharExportar()">
+        <div class="modal-confirm">
+            <h3 id="exp-titulo">Exportar como</h3>
+            <div id="exp-formato">
+                <button class="cfg-chat-op" onclick="escolherFormato('txt')">Texto (.txt)</button>
+                <button class="cfg-chat-op" onclick="escolherFormato('png')">Imagem (.png)</button>
+                <button class="cfg-chat-op" onclick="escolherFormato('pdf')">PDF (.pdf)</button>
+                <div class="btns">
+                    <button class="btn-cancel" onclick="fecharExportar()">Cancelar</button>
+                </div>
+            </div>
+            <div id="exp-confirmar" style="display:none;">
+                <p class="exp-resumo" id="exp-resumo"></p>
+                <div class="btns">
+                    <button class="btn-cancel" onclick="mostrarExportar('formato')">Voltar</button>
+                    <button class="btn-avancar" id="exp-avancar" onclick="avancarExportar()">Avançar</button>
                 </div>
             </div>
         </div>
@@ -1150,6 +1173,14 @@
         container.innerHTML = '';
         const grupos = agruparSaidas(saidasPeriodo);
 
+        // guarda o resultado para poder exportar
+        ultimoCalculo = {
+            periodo: periodo + ' (' + saidasPeriodo.length + (saidasPeriodo.length === 1 ? ' saída)' : ' saídas)'),
+            inicio: inicio, fim: fim,
+            geradoEm: formatarDataBR(dataLocal(new Date())) + ' às ' + new Date().toTimeString().slice(0, 5),
+            linhas: grupos.map(g => ({ produto: g.nome, total: formatarNumero(g.total) + ' ' + (rotuloTipo(g.unidade, g.total) || 'un') }))
+        };
+
         if (grupos.length === 0) {
             container.innerHTML = '<tr><td colspan="2" style="text-align: center;">Nenhuma saída nesse período.</td></tr>';
             return;
@@ -1164,6 +1195,275 @@
                 </tr>
             `;
         });
+    }
+
+    // =====================================================
+    // COPIAR (itens acabados e lista de compras)
+    // =====================================================
+    async function copiarTexto(texto) {
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(texto);
+                return true;
+            }
+        } catch (e) {}
+        try { // plano B para navegadores que bloqueiam o método acima
+            const area = document.createElement('textarea');
+            area.value = texto;
+            area.style.position = 'fixed';
+            area.style.opacity = '0';
+            document.body.appendChild(area);
+            area.select();
+            const copiou = document.execCommand('copy');
+            area.remove();
+            return copiou;
+        } catch (e) { return false; }
+    }
+
+    async function copiarItens(nomes) {
+        if (nomes.length === 0) { avisoErro("Não há itens para copiar."); return; }
+        if (await copiarTexto(nomes.join('\n'))) {
+            notificar('Copiado!', nomes.length + (nomes.length === 1 ? ' item copiado' : ' itens copiados'), '📋', '', true);
+        } else {
+            avisoErro("Não foi possível copiar. Tente de novo.");
+        }
+    }
+
+    function copiarAcabados() {
+        copiarItens(dadosEstoque.filter(p => p.status === 'acabou').map(p => String(p.nome || '').trim()).filter(Boolean));
+    }
+
+    function copiarListaCompras() {
+        copiarItens(dadosListaCompras.map(l => {
+            const nome = String(l.item || '').trim();
+            const obs = String(l.obs || '').trim();
+            return obs ? nome + ' (' + obs + ')' : nome;
+        }).filter(Boolean));
+    }
+
+    // =====================================================
+    // EXPORTAR O RESUMO (texto, imagem ou PDF)
+    // =====================================================
+    let ultimoCalculo = null;
+    let formatoExport = null;
+    const FORMATOS_EXPORT = {
+        txt: { nome: 'Texto (.txt)', ext: '.txt', mime: 'text/plain', descricao: 'Arquivo de texto' },
+        png: { nome: 'Imagem (.png)', ext: '.png', mime: 'image/png', descricao: 'Imagem PNG' },
+        pdf: { nome: 'PDF (.pdf)', ext: '.pdf', mime: 'application/pdf', descricao: 'Documento PDF' }
+    };
+
+    function mostrarExportar(view) {
+        document.getElementById('exp-formato').style.display = (view === 'formato') ? 'block' : 'none';
+        document.getElementById('exp-confirmar').style.display = (view === 'confirmar') ? 'block' : 'none';
+        document.getElementById('exp-titulo').textContent = (view === 'formato') ? 'Exportar como' : 'Confirmar exportação';
+    }
+
+    function abrirExportar() {
+        if (!ultimoCalculo) { avisoErro('Calcule o resumo primeiro (botão CALCULAR RESUMO).'); return; }
+        if (ultimoCalculo.linhas.length === 0) { avisoErro('Não há resultados para exportar nesse período.'); return; }
+        formatoExport = null;
+        mostrarExportar('formato');
+        document.getElementById('modal-exportar').classList.add('active');
+    }
+
+    function fecharExportar() {
+        document.getElementById('modal-exportar').classList.remove('active');
+    }
+
+    function escolherFormato(formato) {
+        formatoExport = formato;
+        const n = ultimoCalculo.linhas.length;
+        document.getElementById('exp-resumo').textContent =
+            'Formato: ' + FORMATOS_EXPORT[formato].nome + '\n' +
+            'Período: ' + ultimoCalculo.periodo + '\n' +
+            n + (n === 1 ? ' produto' : ' produtos') + ' no resumo.\n\n' +
+            'Ao clicar em Avançar, o computador vai abrir a janela para você escolher onde salvar o arquivo.';
+        mostrarExportar('confirmar');
+    }
+
+    function nomeArquivoExport(ext) {
+        const d = ultimoCalculo;
+        let base = 'resumo-saidas';
+        base += (d.inicio || d.fim) ? '_' + (d.inicio || 'inicio') + '_a_' + (d.fim || 'hoje') : '_todas';
+        return base + ext;
+    }
+
+    function baixarArquivo(blob, nome) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nome;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
+
+    async function avancarExportar() {
+        const formato = formatoExport;
+        const dados = ultimoCalculo;
+        if (!formato || !dados) return;
+        const info = FORMATOS_EXPORT[formato];
+        const nome = nomeArquivoExport(info.ext);
+
+        // abre a janela do gerenciador de arquivos do computador para escolher onde salvar
+        let arquivo = null;
+        if (window.showSaveFilePicker) {
+            try {
+                arquivo = await window.showSaveFilePicker({
+                    suggestedName: nome,
+                    types: [{ description: info.descricao, accept: { [info.mime]: [info.ext] } }]
+                });
+            } catch (e) {
+                if (e && e.name === 'AbortError') return; // a pessoa cancelou a janela de salvar
+                arquivo = null;                            // sem permissão: cai no download normal
+            }
+        }
+
+        fecharExportar();
+        try {
+            const blob = await gerarArquivoExport(formato, dados);
+            if (arquivo) {
+                const escrita = await arquivo.createWritable();
+                await escrita.write(blob);
+                await escrita.close();
+            } else {
+                baixarArquivo(blob, nome); // o navegador salva (ou pergunta onde, conforme a configuração dele)
+            }
+            notificar('Exportado!', arquivo ? arquivo.name : nome, '✅', '', true);
+        } catch (erro) {
+            avisoErro('Não foi possível exportar o arquivo.');
+        }
+    }
+
+    async function gerarArquivoExport(formato, dados) {
+        if (formato === 'txt') return gerarTextoExport(dados);
+        if (formato === 'png') return gerarImagemExport(dados);
+        return gerarPDFExport(dados);
+    }
+
+    function gerarTextoExport(dados) {
+        const linhas = ['RESUMO DE SAÍDAS - MY APP', 'Período: ' + dados.periodo, 'Gerado em: ' + dados.geradoEm, ''];
+        dados.linhas.forEach(l => linhas.push(l.produto + ' - ' + l.total));
+        return new Blob(['\uFEFF' + linhas.join('\r\n') + '\r\n'], { type: 'text/plain;charset=utf-8' });
+    }
+
+    function ajustarTextoCanvas(g, texto, maximo) {
+        if (g.measureText(texto).width <= maximo) return texto;
+        let t = texto;
+        while (t.length > 1 && g.measureText(t + '…').width > maximo) t = t.slice(0, -1);
+        return t + '…';
+    }
+
+    function gerarImagemExport(dados) {
+        const escala = 2, largura = 900, margem = 40, alturaLinha = 44, topo = 150;
+        const altura = topo + 44 + dados.linhas.length * alturaLinha + 50;
+        const canvas = document.createElement('canvas');
+        canvas.width = largura * escala;
+        canvas.height = altura * escala;
+        const g = canvas.getContext('2d');
+        g.scale(escala, escala);
+        const fonte = (peso, tam) => peso + ' ' + tam + 'px Arial, Helvetica, sans-serif';
+
+        g.fillStyle = '#ffffff';
+        g.fillRect(0, 0, largura, altura);
+        g.textBaseline = 'middle';
+        g.fillStyle = '#000000'; g.font = fonte('bold', 30); g.fillText('RESUMO DE SAÍDAS', margem, 50);
+        g.fillStyle = '#333333'; g.font = fonte('normal', 18); g.fillText(ajustarTextoCanvas(g, dados.periodo, largura - 2 * margem), margem, 88);
+        g.fillStyle = '#777777'; g.font = fonte('normal', 14); g.fillText('Gerado em ' + dados.geradoEm + '  ·  MY APP', margem, 114);
+
+        let y = topo;
+        g.fillStyle = '#333333';
+        g.fillRect(margem, y, largura - 2 * margem, 44);
+        g.fillStyle = '#ffffff'; g.font = fonte('bold', 16);
+        g.fillText('Produto', margem + 16, y + 22);
+        g.fillText('Total que saiu no período', margem + 470, y + 22);
+        y += 44;
+
+        dados.linhas.forEach((l, i) => {
+            if (i % 2) { g.fillStyle = '#f3f3f3'; g.fillRect(margem, y, largura - 2 * margem, alturaLinha); }
+            g.font = fonte('bold', 16);
+            g.fillStyle = '#000000'; g.fillText(ajustarTextoCanvas(g, l.produto, 430), margem + 16, y + 22);
+            g.fillStyle = '#d00000'; g.fillText(ajustarTextoCanvas(g, l.total, 300), margem + 470, y + 22);
+            g.strokeStyle = '#dddddd'; g.lineWidth = 1;
+            g.beginPath(); g.moveTo(margem, y + alturaLinha); g.lineTo(largura - margem, y + alturaLinha); g.stroke();
+            y += alturaLinha;
+        });
+
+        return new Promise((resolve, reject) => {
+            canvas.toBlob(b => b ? resolve(b) : reject(new Error('imagem')), 'image/png');
+        });
+    }
+
+    // PDF simples escrito à mão (sem biblioteca): texto em Helvetica, várias páginas se precisar
+    function pdfTexto(s) {
+        let saida = '';
+        for (const ch of String(s)) {
+            const c = ch.codePointAt(0);
+            saida += (c < 32) ? ' ' : (c < 256 ? ch : '?'); // letras com acento cabem; emoji vira "?"
+        }
+        return saida.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+    }
+
+    function cortarTexto(t, max) {
+        const letras = Array.from(String(t));
+        return letras.length > max ? letras.slice(0, max - 3).join('') + '...' : String(t);
+    }
+
+    function gerarPDFExport(dados) {
+        const L = 595, A = 842, M = 50, H = 22;
+        const paginas = [];
+        let c = '', y = A - M;
+
+        const cabecalhoTabela = () => {
+            c += '0.2 g ' + M + ' ' + (y - H) + ' ' + (L - 2 * M) + ' ' + H + ' re f\n';
+            c += 'BT /F2 11 Tf ' + (M + 10) + ' ' + (y - 15) + ' Td 1 g (Produto) Tj ET\n';
+            c += 'BT /F2 11 Tf ' + (M + 330) + ' ' + (y - 15) + ' Td 1 g (' + pdfTexto('Total que saiu no período') + ') Tj ET\n';
+            y -= H;
+        };
+
+        c += 'BT /F2 20 Tf ' + M + ' ' + (y - 14) + ' Td 0 g (' + pdfTexto('Resumo de saídas') + ') Tj ET\n'; y -= 34;
+        c += 'BT /F1 12 Tf ' + M + ' ' + (y - 10) + ' Td 0.2 g (' + pdfTexto(cortarTexto(dados.periodo, 90)) + ') Tj ET\n'; y -= 22;
+        c += 'BT /F1 9 Tf ' + M + ' ' + (y - 8) + ' Td 0.45 g (' + pdfTexto('Gerado em ' + dados.geradoEm + ' - MY APP') + ') Tj ET\n'; y -= 30;
+        cabecalhoTabela();
+
+        dados.linhas.forEach((l, i) => {
+            if (y - H < M + 20) { paginas.push(c); c = ''; y = A - M; cabecalhoTabela(); }
+            if (i % 2) c += '0.95 g ' + M + ' ' + (y - H) + ' ' + (L - 2 * M) + ' ' + H + ' re f\n';
+            c += 'BT /F2 11 Tf ' + (M + 10) + ' ' + (y - 15) + ' Td 0 g (' + pdfTexto(cortarTexto(l.produto, 46)) + ') Tj ET\n';
+            c += 'BT /F2 11 Tf ' + (M + 330) + ' ' + (y - 15) + ' Td 0.8 0 0 rg (' + pdfTexto(cortarTexto(l.total, 28)) + ') Tj ET\n';
+            c += '0.85 G 0.5 w ' + M + ' ' + (y - H) + ' m ' + (L - M) + ' ' + (y - H) + ' l S\n';
+            y -= H;
+        });
+        paginas.push(c);
+
+        const n = paginas.length;
+        const objs = [];
+        objs[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+        objs[2] = '<< /Type /Pages /Kids [' + paginas.map((_, i) => (5 + 2 * i) + ' 0 R').join(' ') + '] /Count ' + n + ' >>';
+        objs[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
+        objs[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+        paginas.forEach((conteudo, i) => {
+            const rodape = 'BT /F1 9 Tf ' + (L / 2 - 30) + ' 28 Td 0.5 g (' + pdfTexto('Página ' + (i + 1) + ' de ' + n) + ') Tj ET\n';
+            const fluxo = conteudo + rodape;
+            objs[5 + 2 * i] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + L + ' ' + A + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' + (6 + 2 * i) + ' 0 R >>';
+            objs[6 + 2 * i] = '<< /Length ' + fluxo.length + ' >>\nstream\n' + fluxo + 'endstream';
+        });
+
+        let pdf = '%PDF-1.4\n';
+        const posicoes = [];
+        for (let i = 1; i < objs.length; i++) {
+            posicoes[i] = pdf.length;
+            pdf += i + ' 0 obj\n' + objs[i] + '\nendobj\n';
+        }
+        const xref = pdf.length;
+        pdf += 'xref\n0 ' + objs.length + '\n0000000000 65535 f \n';
+        for (let i = 1; i < objs.length; i++) pdf += String(posicoes[i]).padStart(10, '0') + ' 00000 n \n';
+        pdf += 'trailer\n<< /Size ' + objs.length + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF';
+
+        const bytes = new Uint8Array(pdf.length);
+        for (let i = 0; i < pdf.length; i++) bytes[i] = pdf.charCodeAt(i) & 255;
+        return new Blob([bytes], { type: 'application/pdf' });
     }
 
     definirPeriodo(6); // começa com os últimos 7 dias

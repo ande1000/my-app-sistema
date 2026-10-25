@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const http = require('http');
+const crypto = require('crypto');
 const { Server } = require("socket.io");
 
 const app = express();
@@ -33,6 +34,7 @@ async function conectarBanco() {
             socketTimeoutMS: 45000
         });
         console.log("✅ Conectado ao MongoDB Atlas com sucesso!");
+        carregarStatusPainel();
     } catch (erro) {
         console.log("❌ Erro ao conectar ao banco:", erro.message);
         console.log("🔁 Tentando novamente em 10 segundos...");
@@ -69,6 +71,46 @@ const Usuario = mongoose.model('Usuario', new mongoose.Schema({
 
 // Mostra nos logs cada requisição que chega (ajuda a diagnosticar)
 app.use((req, res, next) => { console.log("➡️", req.method, req.url); next(); });
+
+// Configurações simples do sistema (ex.: painel ligado ou desligado)
+const Config = mongoose.model('Config', new mongoose.Schema({ chave: String, ativo: Boolean }));
+
+// =====================================================
+// MODO: liga e desliga o painel de controle (controlado pelo app, com senha)
+// A senha NÃO fica escrita no código: guardamos só o "resumo" (hash) dela.
+// Para trocar a senha: no Render, crie a variável PAINEL_SENHA com a nova senha.
+// =====================================================
+const SENHA_PAINEL_HASH = Buffer.from(
+    process.env.PAINEL_SENHA
+        ? crypto.createHash('sha256').update(String(process.env.PAINEL_SENHA)).digest('hex')
+        : '882fcb2499f8baae4f9abd2a44ef35530ddbda1afd6b1ec31cf8140651907c31',
+    'hex'
+);
+const senhaCorreta = (s) => crypto.timingSafeEqual(
+    crypto.createHash('sha256').update(String(s === undefined || s === null ? '' : s)).digest(),
+    SENHA_PAINEL_HASH
+);
+
+let painelAtivo = true;
+const tokensModo = new Map();   // token -> quando expira
+const tentativasModo = new Map(); // ip -> { erros, bloqueadoAte }
+
+async function carregarStatusPainel() {
+    try {
+        const c = await Config.findOne({ chave: 'painel' }).lean();
+        if (c && typeof c.ativo === 'boolean') painelAtivo = c.ativo;
+        console.log("🔌 Painel está:", painelAtivo ? "ATIVO" : "DESATIVADO");
+    } catch (erro) {
+        console.log("Não foi possível ler o status do painel:", erro.message);
+    }
+}
+
+function tokenModoValido(token) {
+    const expira = tokensModo.get(token);
+    if (!expira) return false;
+    if (expira < Date.now()) { tokensModo.delete(token); return false; }
+    return true;
+}
 
 // Helper para não repetir try/catch em toda rota
 const rota = (fn) => async (req, res) => {
@@ -260,6 +302,38 @@ app.post('/usuarios', rota(async (req, res) => {
 app.delete('/usuarios/:id', rota(async (req, res) => {
     await Usuario.findByIdAndDelete(req.params.id);
     res.json({ mensagem: "Apagado!" });
+}));
+
+// MODO DO PAINEL
+app.get('/painel/status', (req, res) => res.json({ ativo: painelAtivo }));
+
+app.post('/painel/entrar', (req, res) => {
+    const ip = req.ip || 'desconhecido';
+    const t = tentativasModo.get(ip) || { erros: 0, bloqueadoAte: 0 };
+    if (t.bloqueadoAte > Date.now()) {
+        const min = Math.ceil((t.bloqueadoAte - Date.now()) / 60000);
+        return res.status(429).json({ erro: `Muitas tentativas. Tente de novo em ${min} min.` });
+    }
+    if (!senhaCorreta(req.body && req.body.senha)) {
+        t.erros++;
+        if (t.erros >= 5) { t.erros = 0; t.bloqueadoAte = Date.now() + 5 * 60000; }
+        tentativasModo.set(ip, t);
+        return res.status(401).json({ erro: 'Senha incorreta' });
+    }
+    tentativasModo.delete(ip);
+    const token = crypto.randomBytes(24).toString('hex');
+    tokensModo.set(token, Date.now() + 10 * 60000); // vale por 10 minutos
+    res.json({ ok: true, token, ativo: painelAtivo });
+});
+
+app.post('/painel/status', rota(async (req, res) => {
+    const { token, ativo } = req.body || {};
+    if (!tokenModoValido(token)) return res.status(401).json({ erro: 'Sessão expirada. Digite a senha de novo.' });
+    if (typeof ativo !== 'boolean') return res.status(400).json({ erro: 'Valor inválido' });
+    await Config.findOneAndUpdate({ chave: 'painel' }, { ativo }, { upsert: true });
+    painelAtivo = ativo;
+    io.emit('painelStatus', { ativo });
+    res.json({ ativo });
 }));
 
 // =====================================================

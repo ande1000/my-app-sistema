@@ -28,6 +28,35 @@
         .app-title { text-align: right; flex-grow: 1; display: flex; flex-direction: column; align-items: flex-end; margin-top: 27px; padding-right: 35px; }
         .app-title h1 { font-size: 45px; color: var(--letras-titulo, var(--text-black)); font-weight: 900; line-height: 1; }
                 .phone-number { color: var(--letras-verde, var(--primary-green)); font-weight: bold; font-size: 18px; display: flex; justify-content: flex-end; align-items: center; gap: 5px; margin-top: 15px; align-self: flex-end; }
+        .mode-icon { position: absolute; top: 15px; right: 55px; width: 30px; height: 30px; cursor: pointer; z-index: 10; }
+        .tela-cheia { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; z-index: 600; overflow-y: auto; }
+        .tela-cheia.active { display: flex; }
+        #tela-modo { background: #b73cb8; }
+        #tela-modo-config { background: #000; }
+        .modo-x { position: absolute; top: 10px; left: 12px; width: 34px; height: 34px; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; }
+        .modo-x svg { width: 26px; height: 26px; stroke: #ff8a1f; stroke-width: 5; stroke-linecap: round; fill: none; }
+        .modo-aviso { background: #000; color: #fff; border-radius: 30px; margin: 46px 14px 0; padding: 16px 16px 20px; text-align: center; }
+        .modo-aviso h1 { font-size: 46px; font-weight: 900; letter-spacing: 2px; line-height: 1; margin-bottom: 8px; }
+        .modo-aviso p { font-size: 12px; font-weight: bold; text-transform: uppercase; margin-top: 10px; line-height: 1.4; }
+        .modo-aviso p.vermelho { color: #ff3b3b; font-size: 15px; font-weight: 900; margin-top: 16px; }
+        .modo-input { margin: 30px auto 0; width: 72%; padding: 12px; border: 5px solid #000; border-radius: 20px; background: transparent; color: #fff; text-align: center; font-weight: bold; font-size: 15px; outline: none; display: block; }
+        .modo-input::placeholder { color: #fff; opacity: 0.9; }
+        .modo-erro { min-height: 20px; margin: 10px 20px 0; text-align: center; color: #fff; font-weight: bold; font-size: 13px; }
+        .modo-play { margin: 18px auto 0; width: 84px; height: 58px; background: #000; border: none; border-radius: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .modo-play svg { width: 34px; height: 34px; fill: #00d84f; }
+        .modo-play:active { transform: scale(0.94); }
+        .modo-faixa { background: #fff000; color: #333; font-size: 34px; font-weight: 900; text-align: center; padding: 26px 10px; margin: 52px 14px 0; letter-spacing: 1px; }
+        .modo-chaves { display: flex; justify-content: space-around; align-items: flex-start; margin-top: 90px; padding: 0 6px; }
+        .modo-chave { display: flex; flex-direction: column; align-items: center; gap: 10px; background: none; border: none; cursor: pointer; padding: 0; }
+        .sw { width: 108px; height: 32px; border-radius: 16px; background: #fff; position: relative; display: block; }
+        .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 28px; height: 28px; border-radius: 50%; background: #bdbdbd; transition: left 0.25s, background 0.25s; }
+        .sw.on::after { left: calc(100% - 30px); }
+        .sw-vermelho.on::after { background: #ee1c25; }
+        .sw-verde.on::after { background: #00d04e; }
+        .modo-rotulo { font-weight: 900; font-size: 20px; }
+        .modo-rotulo.vermelho { color: #ee3b3b; }
+        .modo-rotulo.verde { color: #1fd35f; }
+        .modo-status { text-align: center; color: #fff; font-size: 14px; margin-top: 46px; font-weight: bold; }
         .settings-icon { position: absolute; top: 15px; right: 15px; width: 30px; height: 30px; cursor: pointer; z-index: 10; }
 
         .bottom-nav { 
@@ -215,6 +244,9 @@
 
     <div id="tela-principal" class="screen">
         <div class="main-header">
+            <div class="mode-icon" onclick="abrirModo()" title="Modo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+            </div>
             <div class="settings-icon" onclick="abrirConfig()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </div>
@@ -461,6 +493,36 @@
                 <button class="btn-confirm" style="background:#ff3b30; color:#fff;" onclick="confirmarSairDaConta()">Sair</button>
             </div>
         </div>
+    </div>
+
+    <div class="tela-cheia" id="tela-modo">
+        <button class="modo-x" onclick="fecharModo()" title="Fechar"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+        <div class="modo-aviso">
+            <h1>MODO</h1>
+            <p>Só o criador do sistema tem senha de acesso.</p>
+            <p>Por segurança, aguarde, ou entre em contato com o dono do sistema.</p>
+            <p>Você precisa de uma senha para reativar o sistema.</p>
+            <p class="vermelho">AGUARDE OU FALE COM ANDERSON</p>
+        </div>
+        <input type="password" id="modo-senha" class="modo-input" placeholder="digite sua senha aqui" autocomplete="off" onkeydown="if(event.key === 'Enter') entrarModo()">
+        <div class="modo-erro" id="modo-erro"></div>
+        <button class="modo-play" id="modo-play" onclick="entrarModo()" title="Entrar"><svg viewBox="0 0 24 24"><polygon points="6,3 21,12 6,21"></polygon></svg></button>
+    </div>
+
+    <div class="tela-cheia" id="tela-modo-config">
+        <button class="modo-x" onclick="fecharModo()" title="Sair"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+        <div class="modo-faixa">MODO CONFIG</div>
+        <div class="modo-chaves">
+            <button class="modo-chave" onclick="definirPainel(false)">
+                <span class="sw sw-vermelho" id="sw-desativar"></span>
+                <span class="modo-rotulo vermelho">DESATIVAR</span>
+            </button>
+            <button class="modo-chave" onclick="definirPainel(true)">
+                <span class="sw sw-verde" id="sw-ativar"></span>
+                <span class="modo-rotulo verde">ATIVAR</span>
+            </button>
+        </div>
+        <div class="modo-status" id="modo-status"></div>
     </div>
 
     <div id="toast" class="toast">Ação salva!</div>
@@ -994,6 +1056,101 @@
         guardarConfig();
         mostrarViewConfig('cfg-menu', 'configuração');
         mostrarToast("Nome do app salvo!");
+    }
+
+    // =====================================================
+    // MODO: liga e desliga o painel de controle (precisa da senha do dono)
+    // A senha é conferida no servidor; ela não fica escrita neste arquivo.
+    // =====================================================
+    let tokenModo = null;
+    let painelAtivoApp = true;
+
+    function abrirModo() {
+        tokenModo = null;
+        document.getElementById('modo-senha').value = '';
+        document.getElementById('modo-erro').textContent = '';
+        document.getElementById('tela-modo-config').classList.remove('active');
+        document.getElementById('tela-modo').classList.add('active');
+        setTimeout(() => document.getElementById('modo-senha').focus(), 50);
+    }
+
+    function fecharModo() {
+        tokenModo = null; // para mexer de novo, precisa digitar a senha outra vez
+        document.getElementById('modo-senha').value = '';
+        document.getElementById('tela-modo').classList.remove('active');
+        document.getElementById('tela-modo-config').classList.remove('active');
+    }
+
+    function desenharChaves() {
+        document.getElementById('sw-desativar').classList.toggle('on', !painelAtivoApp);
+        document.getElementById('sw-ativar').classList.toggle('on', painelAtivoApp);
+        document.getElementById('modo-status').textContent = 'Painel de controle: ' + (painelAtivoApp ? 'ATIVADO' : 'DESATIVADO');
+    }
+
+    async function entrarModo() {
+        const senha = document.getElementById('modo-senha').value;
+        const erro = document.getElementById('modo-erro');
+        if (!senha) { erro.textContent = 'Digite a senha.'; return; }
+        erro.textContent = '';
+
+        document.getElementById('loading-title').innerText = "Aguarde um momento...";
+        document.getElementById('loading-text').innerText = "Verificando a senha!";
+        document.getElementById('loading-overlay').classList.add('active');
+        try {
+            const res = await fetch(`${URL_SERVIDOR}/painel/entrar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ senha: senha })
+            });
+            const dados = await res.json().catch(() => ({}));
+            if (res.ok && dados.token) {
+                tokenModo = dados.token;
+                painelAtivoApp = dados.ativo !== false;
+                document.getElementById('modo-senha').value = '';
+                document.getElementById('tela-modo').classList.remove('active');
+                desenharChaves();
+                document.getElementById('tela-modo-config').classList.add('active');
+            } else {
+                erro.textContent = dados.erro || 'Senha incorreta.';
+                document.getElementById('modo-senha').value = '';
+            }
+        } catch (e) {
+            erro.textContent = 'Erro de conexão. Tente de novo.';
+        }
+        document.getElementById('loading-overlay').classList.remove('active');
+    }
+
+    async function definirPainel(ativo) {
+        if (!tokenModo) { abrirModo(); return; }
+        if (painelAtivoApp === ativo) {
+            mostrarToast(ativo ? "O painel já está ativado" : "O painel já está desativado");
+            return;
+        }
+        document.getElementById('loading-title').innerText = "Aguarde um momento...";
+        document.getElementById('loading-text').innerText = ativo ? "Ativando o painel!" : "Desativando o painel!";
+        document.getElementById('loading-overlay').classList.add('active');
+        try {
+            const res = await fetch(`${URL_SERVIDOR}/painel/status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: tokenModo, ativo: ativo })
+            });
+            const dados = await res.json().catch(() => ({}));
+            document.getElementById('loading-overlay').classList.remove('active');
+            if (res.ok) {
+                painelAtivoApp = ativo;
+                desenharChaves();
+                mostrarToast(ativo ? "Painel foi ativado" : "Painel foi desativado", !ativo);
+            } else if (res.status === 401) {
+                mostrarToast(dados.erro || "Digite a senha de novo.", true);
+                abrirModo();
+            } else {
+                mostrarToast(dados.erro || "Não foi possível mudar o painel.", true);
+            }
+        } catch (e) {
+            document.getElementById('loading-overlay').classList.remove('active');
+            mostrarToast("Erro de conexão. Tente de novo.", true);
+        }
     }
 
     // ===== MENU DE OPÇÕES DO PRODUTO (botão de configuração) =====

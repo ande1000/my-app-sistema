@@ -70,6 +70,20 @@
         .btn-exportar:active { transform: scale(0.94); }
         .exp-resumo { white-space: pre-line; font-size: 15px; line-height: 1.6; text-align: left; margin-bottom: 20px; color: #222; }
         .modal-confirm .btn-avancar { background: #00ff00; color: #000; }
+        /* TELA DE AVISO: painel desativado pelo app */
+        #tela-aviso-painel { position: fixed; inset: 0; z-index: 9000; background: #bdbdbd; display: none; flex-direction: column; overflow-y: auto; }
+        .aviso-topo { background: #ff8a1f; color: #333; font-size: 56px; font-weight: 900; text-align: center; letter-spacing: 3px; padding: 6px 10px; line-height: 1.15; flex-shrink: 0; }
+        .aviso-corpo { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 28px 20px 110px; gap: 28px; }
+        .aviso-card { background: #000; color: #fff; border-radius: 36px; width: 100%; max-width: 640px; padding: 22px 34px 26px; text-align: center; }
+        .aviso-card h1 { font-size: 54px; font-weight: 900; letter-spacing: 3px; line-height: 1.1; margin-bottom: 10px; }
+        .aviso-card p { font-size: 16px; font-weight: bold; line-height: 1.5; margin-top: 12px; }
+        .aviso-card p.aviso-verde { color: #2ee86a; font-size: 18px; margin-top: 20px; }
+        .aviso-aguarde { background: #000; color: #ff3b3b; font-size: 26px; font-weight: 900; text-align: center; padding: 26px 40px; width: 100%; max-width: 560px; }
+        .aviso-suporte { position: fixed; right: 18px; bottom: 14px; background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; transition: 0.2s; }
+        .aviso-suporte:hover { transform: scale(1.06); }
+        .aviso-suporte span { font-size: 12px; font-weight: 900; color: #000; letter-spacing: 1px; }
+        .aviso-suporte svg { width: 52px; height: 46px; }
+        @media (max-width: 600px) { .aviso-topo { font-size: 38px; } .aviso-card { padding: 18px 20px 22px; border-radius: 28px; } .aviso-card h1 { font-size: 40px; } .aviso-aguarde { font-size: 20px; padding: 20px; } }
         .cfgp-card { background: #fff; width: 92%; max-width: 340px; border-radius: 14px; border: 3px solid #000; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
         .cfgp-topo { background: var(--header-purple); height: 54px; position: relative; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; color: #000; padding: 0 50px; }
         .cfgp-x { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; }
@@ -369,6 +383,24 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="tela-aviso-painel" role="alertdialog" aria-label="Painel desativado">
+        <div class="aviso-topo">MY APP</div>
+        <div class="aviso-corpo">
+            <div class="aviso-card">
+                <h1>AVISO</h1>
+                <p>Anderson se encontra ausente neste momento, mas ele voltará mais tarde. Fique de olho aqui.</p>
+                <p>Este sistema só pode ser usado quando Anderson estiver em atividade. No momento não é possível usar este sistema.</p>
+                <p>Este sistema foi desativado porque Anderson não está trabalhando.</p>
+                <p class="aviso-verde">Entre em contato com o suporte.</p>
+            </div>
+            <div class="aviso-aguarde">Aguarde até que seja REATIVADO</div>
+        </div>
+        <button class="aviso-suporte" onclick="abrirSuporteWhatsApp()" title="Falar com o suporte no WhatsApp">
+            <span>SUPORTE</span>
+            <svg viewBox="0 0 24 22"><path d="M21 14a2 2 0 0 1-2 2H7l-4 4V4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="#b53bc2" stroke="#b53bc2" stroke-width="1.2" stroke-linejoin="round"></path></svg>
+        </button>
     </div>
 
     <div id="tela-conta-painel">
@@ -747,6 +779,8 @@
         carregarConversas();
     });
 
+    socket.on('painelStatus', (dados) => aplicarBloqueio(!(dados && dados.ativo)));
+
     socket.on('conversaApagada', (dados) => {
         const nome = dados && dados.usuario;
         delete naoLidas[nome];
@@ -867,6 +901,8 @@
         if (consultando) return;
         consultando = true;
         try {
+            await verificarStatusPainel();
+            if (painelBloqueado) return;
             await carregarDadosPainel();
             if (abaAtual === 'estoque') renderEstoquePainel();
             if (abaAtual === 'obs') renderObsPainel();
@@ -891,6 +927,7 @@
     }
 
     async function carregarDadosPainel() {
+        if (painelBloqueado) return; // painel desativado: não busca nada
         // as consultas rodam juntas; a lista de usuários só é pedida quando a aba "usuários" está aberta
         const [listaProdutos, listaSaidas, listaCompras, listaUsuarios] = await Promise.all([
             pegarLista(`${URL_SERVIDOR}/produtos`),
@@ -1468,6 +1505,38 @@
 
     definirPeriodo(6); // começa com os últimos 7 dias
 
+    // ===== PAINEL DESATIVADO PELO APP (tela de aviso que bloqueia o uso) =====
+    const CHAVE_BLOQUEIO = 'myAppPainelBloqueado';
+    let painelBloqueado = false;
+
+    function aplicarBloqueio(bloqueado) {
+        const estavaBloqueado = painelBloqueado;
+        painelBloqueado = bloqueado;
+        document.getElementById('tela-aviso-painel').style.display = bloqueado ? 'flex' : 'none';
+        // ninguém consegue clicar ou digitar por trás do aviso (o próprio aviso continua funcionando)
+        document.querySelectorAll('.desktop-container > *').forEach(el => {
+            el.inert = bloqueado && el.id !== 'tela-aviso-painel';
+        });
+        try { localStorage.setItem(CHAVE_BLOQUEIO, bloqueado ? '1' : '0'); } catch (e) {}
+        if (estavaBloqueado && !bloqueado) { // voltou a funcionar
+            snapshotProdutos = null;          // não avisa de tudo o que mudou enquanto estava desativado
+            cicloDeAtualizacao();
+        }
+    }
+
+    async function verificarStatusPainel() {
+        try {
+            const r = await fetch(`${URL_SERVIDOR}/painel/status`);
+            const j = await r.json();
+            if (typeof j.ativo === 'boolean') aplicarBloqueio(!j.ativo);
+        } catch (erro) {}
+    }
+
+    function abrirSuporteWhatsApp() {
+        const mensagem = 'Olá Anderson! Preciso reativar o painel de controle do My App, porque preciso usar o painel. Pode reativar, por favor?';
+        window.open('https://wa.me/5577991130508?text=' + encodeURIComponent(mensagem), '_blank', 'noopener');
+    }
+
     // ===== SINO: liga e desliga as notificações (bolinha verde = ativas, vermelha = desativadas) =====
     const CHAVE_NOTIF = 'myAppPainelNotificacoes';
     let notificacoesAtivas = true;
@@ -1495,7 +1564,7 @@
 
     // Avisos de novidade (item novo, item acabou, mensagem): só aparecem com o sino ativado
     function alertaNovidade(titulo, texto, icone, tipo) {
-        if (!notificacoesAtivas) return;
+        if (!notificacoesAtivas || painelBloqueado) return;
         notificar(titulo, texto, icone, tipo);
     }
 
@@ -1599,6 +1668,8 @@
 
     iniciarContaPainel();
     atualizarSino();
+    try { if (localStorage.getItem(CHAVE_BLOQUEIO) === '1') aplicarBloqueio(true); } catch (e) {}
+    verificarStatusPainel();
 
     carregarDadosPainel().then(() => {
         renderEstoquePainel();

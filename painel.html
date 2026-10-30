@@ -205,6 +205,7 @@
         .notif-corpo { min-width: 0; }
         .notif-titulo { font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase; letter-spacing: 0.3px; }
         .notif-texto { font-size: 14px; font-weight: bold; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #banner-economia { position: fixed; bottom: 56px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; font-size: 14px; font-weight: bold; padding: 10px 20px; border-radius: 22px; z-index: 3500; display: none; max-width: 90vw; text-align: center; box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
         #aviso-som { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; font-size: 12px; padding: 6px 14px; border-radius: 20px; z-index: 3000; display: none; }
 
         /* MODAL */
@@ -415,6 +416,7 @@
     </div>
 
     <div id="notif-container"></div>
+    <div id="banner-economia"></div>
     <div id="aviso-som">🔇 Clique em qualquer lugar da tela para ativar o som das notificações</div>
 
     <div class="modal-overlay" id="modal-config-chat" onclick="if(event.target === this) fecharConfigChat()">
@@ -510,7 +512,7 @@
     const _fetchOriginal = window.fetch.bind(window);
     window.fetch = (url, opts = {}) => {
         const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 20000);
+        const t = setTimeout(() => ctrl.abort(), 60000);
         return _fetchOriginal(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(t));
     };
     // "Acorda" o servidor gratuito assim que a página abre
@@ -625,6 +627,85 @@
     }
 
     const socket = io(URL_SERVIDOR);
+
+    // =====================================================
+    // ECONOMIA DE HORAS DO SERVIDOR
+    // O servidor gratuito do Render gasta horas enquanto alguém usa ele. Por isso o painel só
+    // fica conectado quando você está mexendo (mouse, clique, teclado, toque). Depois de
+    // alguns minutos parado, ele entra em "repouso" e para de consultar o servidor, e o
+    // servidor pode dormir. Ao mexer de novo, ele acorda e atualiza tudo.
+    // =====================================================
+    const TEMPO_INATIVO = 5 * 60 * 1000; // 5 minutos sem mexer
+    let emRepouso = false;
+    let ultimaAtividade = Date.now();
+    let momentoRepouso = 0;
+    let momentoAcordou = 0;
+    let dadosCarregados = false;
+    let conversasAntesDoRepouso = {}; // última mensagem de cada conversa quando o painel foi dormir
+
+    const TEXTOS_BANNER = {
+        repouso: '💤 Painel em repouso para economizar horas do servidor. Mexa o mouse ou clique para continuar.',
+        acordando: '⏳ Acordando o servidor… pode levar até 1 minuto.',
+        erro: '⚠️ Sem conexão com o servidor. Tentando de novo…'
+    };
+
+    function mostrarBannerEconomia(tipo) {
+        const b = document.getElementById('banner-economia');
+        if (!tipo) { b.style.display = 'none'; return; }
+        b.textContent = TEXTOS_BANNER[tipo];
+        b.style.display = 'block';
+    }
+
+    function dormirPainel() {
+        if (emRepouso) return;
+        emRepouso = true;
+        momentoRepouso = Date.now();
+        conversasAntesDoRepouso = {};
+        conversas.forEach(c => { conversasAntesDoRepouso[c.usuario] = c.ultimaData; });
+        socket.disconnect();
+        mostrarBannerEconomia('repouso');
+    }
+
+    async function acordarPainel() {
+        if (!emRepouso) return;
+        const antes = conversasAntesDoRepouso;
+        emRepouso = false;
+        momentoAcordou = Date.now();
+        mostrarBannerEconomia('acordando');
+        socket.connect();
+        await cicloDeAtualizacao();
+        await carregarConversas();
+        // avisa das mensagens que chegaram enquanto o painel estava em repouso
+        // (compara só horas do servidor com horas do servidor, então não depende do relógio do computador)
+        conversas.forEach(c => {
+            const eraConhecida = antes[c.usuario] !== undefined;
+            const chegouNova = !eraConhecida || new Date(c.ultimaData).getTime() > new Date(antes[c.usuario]).getTime();
+            if (c.ultimoRemetente === 'app' && chegouNova && !(c.usuario === conversaAtual && abaAtual === 'chat')) {
+                naoLidas[c.usuario] = Math.max(naoLidas[c.usuario] || 0, 1);
+                alertaNovidade('Nova mensagem', c.usuario + ': ' + c.ultimaMensagem, '💬', 'msg');
+            }
+        });
+        renderConversas();
+        atualizarBadgeChat();
+    }
+
+    function registrarAtividade() {
+        ultimaAtividade = Date.now();
+        if (emRepouso) acordarPainel();
+    }
+
+    ['mousemove', 'mousedown', 'click', 'keydown', 'touchstart', 'scroll', 'wheel'].forEach(ev => {
+        window.addEventListener(ev, registrarAtividade, { passive: true, capture: true });
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) ultimaAtividade = Math.min(ultimaAtividade, Date.now() - (TEMPO_INATIVO - 60000)); // aba escondida: repouso em ~1 min
+        else registrarAtividade();
+    });
+
+    setInterval(() => {
+        if (!emRepouso && Date.now() - ultimaAtividade > TEMPO_INATIVO) dormirPainel();
+    }, 15000);
 
     // =====================================================
     // CONVERSAS (uma por usuário do app, como no WhatsApp)
@@ -914,7 +995,7 @@
             consultando = false;
         }
     }
-    setInterval(cicloDeAtualizacao, 5000);
+    setInterval(() => { if (!emRepouso) cicloDeAtualizacao(); }, 5000);
 
     async function pegarLista(url) {
         try {
@@ -935,6 +1016,13 @@
             pegarLista(`${URL_SERVIDOR}/lista`),
             abaAtual === 'usuarios' ? pegarLista(`${URL_SERVIDOR}/usuarios`) : Promise.resolve(null)
         ]);
+        if (!listaProdutos && !listaSaidas && !listaCompras) {
+            // nenhuma resposta: servidor fora do ar ou ainda acordando
+            if (!emRepouso) mostrarBannerEconomia(Date.now() - momentoAcordou < 90000 ? 'acordando' : 'erro');
+        } else {
+            dadosCarregados = true;
+            if (!emRepouso) mostrarBannerEconomia(null);
+        }
         if (listaProdutos) {
             dadosEstoque = listaProdutos;
             detectarNovidadesProdutos(listaProdutos);
@@ -1001,7 +1089,7 @@
         const container = document.getElementById('painel-estoque');
         if(!container) return;
         container.innerHTML = '';
-        if (dadosEstoque.length === 0) container.innerHTML = '<p>Nenhum produto no estoque.</p>';
+        if (dadosEstoque.length === 0) container.innerHTML = '<p>' + (dadosCarregados ? 'Nenhum produto no estoque.' : 'Conectando ao servidor…') + '</p>';
         
         dadosEstoque.forEach(prod => {
             container.innerHTML += `
@@ -1022,7 +1110,7 @@
         if(!container) return;
         container.innerHTML = '';
         const comObs = dadosEstoque.filter(p => p.obs && p.obs.trim() !== '');
-        if (comObs.length === 0) container.innerHTML = '<p>Nenhuma observação.</p>';
+        if (comObs.length === 0) container.innerHTML = '<p>' + (dadosCarregados ? 'Nenhuma observação.' : 'Conectando ao servidor…') + '</p>';
 
         comObs.forEach(prod => {
             container.innerHTML += `
@@ -1077,7 +1165,7 @@
         if(!container) return;
         container.innerHTML = '';
         gruposSaidas = agruparSaidas(dadosSairam);
-        if (gruposSaidas.length === 0) container.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum item saiu.</td></tr>';
+        if (gruposSaidas.length === 0) container.innerHTML = '<tr><td colspan="5" style="text-align:center;">' + (dadosCarregados ? 'Nenhum item saiu.' : 'Conectando ao servidor…') + '</td></tr>';
 
         gruposSaidas.forEach((g, i) => {
             const detalhe = g.vezes > 1 ? ` <small style="color:#777; font-weight:normal;">(${g.vezes} saídas)</small>` : '';
@@ -1120,7 +1208,7 @@
         if(!container) return;
         container.innerHTML = '';
         const acabados = dadosEstoque.filter(p => p.status === 'acabou');
-        if (acabados.length === 0) container.innerHTML = '<p>Nenhum item acabado.</p>';
+        if (acabados.length === 0) container.innerHTML = '<p>' + (dadosCarregados ? 'Nenhum item acabado.' : 'Conectando ao servidor…') + '</p>';
 
         acabados.forEach(prod => {
             container.innerHTML += `
@@ -1139,7 +1227,7 @@
         const container = document.getElementById('painel-lista');
         if(!container) return;
         container.innerHTML = '';
-        if (dadosListaCompras.length === 0) container.innerHTML = '<p>Nenhuma lista recebida.</p>';
+        if (dadosListaCompras.length === 0) container.innerHTML = '<p>' + (dadosCarregados ? 'Nenhuma lista recebida.' : 'Conectando ao servidor…') + '</p>';
 
         dadosListaCompras.forEach(lista => {
             container.innerHTML += `

@@ -555,6 +555,52 @@
     let idProdutoTemporario = null; 
 
     const socket = io(URL_SERVIDOR);
+
+    // =====================================================
+    // ECONOMIA DE HORAS DO SERVIDOR
+    // Só fica conectado ao servidor enquanto você está usando o app (toque, clique, mouse,
+    // teclado). Depois de alguns minutos parado, o app para de falar com o servidor, e ele
+    // pode dormir. Ao tocar de novo, o app reconecta e atualiza os dados.
+    // =====================================================
+    const TEMPO_INATIVO = 5 * 60 * 1000; // 5 minutos sem usar
+    let emRepouso = false;
+    let ultimaAtividade = Date.now();
+    let momentoRepouso = 0;
+
+    function dormirApp() {
+        if (emRepouso) return;
+        emRepouso = true;
+        momentoRepouso = Date.now();
+        socket.disconnect();
+    }
+
+    function acordarApp() {
+        if (!emRepouso) return;
+        const dormiu = Date.now() - momentoRepouso;
+        emRepouso = false;
+        socket.connect();
+        registrarPresenca();
+        if (usuarioAtual) carregarDados();
+        if (dormiu > 10 * 60 * 1000) mostrarToast("Acordando o servidor… pode levar até 1 minuto");
+    }
+
+    function registrarAtividade() {
+        ultimaAtividade = Date.now();
+        if (emRepouso) acordarApp();
+    }
+
+    ['mousemove', 'mousedown', 'click', 'keydown', 'touchstart', 'scroll', 'wheel'].forEach(ev => {
+        window.addEventListener(ev, registrarAtividade, { passive: true, capture: true });
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) ultimaAtividade = Math.min(ultimaAtividade, Date.now() - (TEMPO_INATIVO - 60000)); // app em segundo plano: repouso em ~1 min
+        else registrarAtividade();
+    });
+
+    setInterval(() => {
+        if (!emRepouso && Date.now() - ultimaAtividade > TEMPO_INATIVO) dormirApp();
+    }, 15000);
     socket.on('connect', () => {
         if (usuarioAtual) socket.emit('entrarUsuario', usuarioAtual.nome); // (re)entra na sala da própria conversa
         carregarMensagensAntigas();
@@ -704,7 +750,7 @@
 
     // Avisa o servidor que o usuário está online (aparece no painel de controle)
     async function registrarPresenca() {
-        if (!usuarioAtual) return;
+        if (!usuarioAtual || emRepouso) return;
         try {
             await fetch(`${URL_SERVIDOR}/usuarios`, {
                 method: 'POST',
